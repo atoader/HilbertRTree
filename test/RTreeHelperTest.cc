@@ -54,6 +54,9 @@ TEST(RTreeHelperTest, chooseLeaf)
     ASSERT_EQ(childNode3,RTreeHelper::chooseLeaf(nonLeaf, h3));
 
     ASSERT_EQ(childNode1,RTreeHelper::chooseLeaf(nonLeaf, h1));
+
+    delete leaf;
+    delete nonLeaf;
 }
 
 TEST(RTreeHelperTest, searchLeaf)
@@ -99,6 +102,8 @@ TEST(RTreeHelperTest, searchLeaf)
 
     std::list<boost::shared_ptr<NodeEntry> > r4 = RTreeHelper::search(leaf, rect4);
     ASSERT_EQ(2, r4.size());
+
+    delete leaf;
 }
 
 TEST(RTreeHelperTest, searchNonLeaf)
@@ -154,5 +159,11 @@ TEST(RTreeHelperTest, searchNonLeaf)
     ASSERT_EQ(entry1, r4.front());
     ASSERT_EQ(entry2, r4.back());
 
+    //delete leaf;
+    delete parent;
+}
+
+TEST(RTreeHelperTest, redistributeEntries)
+{
 
 }

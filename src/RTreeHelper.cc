@@ -68,7 +68,7 @@ std::list<boost::shared_ptr<NodeEntry> > RTreeHelper::search(Node *subtreeRoot, 
 void RTreeHelper::redistributeEntries(EntryMultiSet &entries, std::list<Node *> siblings)
 {
     //Distribute the entries evenly
-    int batchSize = entries.size() / (siblings.size() + 1) + 1;
+    int batchSize = entries.size() / siblings.size() + 1;
 
     int currentBatchSize = 0;
     std::list<Node*>::iterator siblingIt = siblings.begin();
@@ -87,7 +87,14 @@ void RTreeHelper::redistributeEntries(EntryMultiSet &entries, std::list<Node *> 
             (*siblingIt)->getEntries().insert(entriesBeginCopy, entriesIt);
             currentBatchSize = 0;
             siblingIt++;
+            entriesBeginCopy = entriesIt;
         }
+    }
+
+    if(siblingIt!=siblings.end())
+    {
+        (*siblingIt)->getEntries().clear();
+        (*siblingIt)->getEntries().insert(entriesBeginCopy, entriesIt);
     }
 }
 

@@ -100,6 +100,8 @@ TEST(NodeTest, insertNonLeafEntrySiblings_1)
     ASSERT_EQ(parent, nonLeafEntry->ptr->getParent());
     ASSERT_EQ(NULL, childNode->getNextSibling());
     ASSERT_EQ(NULL, childNode->getPrevSibling());
+
+    delete parent;
 }
 
 TEST(NodeTest, insertNonLeafEntrySiblings_2)
@@ -141,6 +143,8 @@ TEST(NodeTest, insertNonLeafEntrySiblings_2)
 
     ASSERT_EQ(childNode, childNode2->getPrevSibling());
     ASSERT_EQ(childNode2, childNode->getNextSibling());
+
+    delete parent;
 }
 
 TEST(NodeTest,insertNonLeafEntrySiblings_3)
@@ -197,6 +201,10 @@ TEST(NodeTest,insertNonLeafEntrySiblings_3)
     ASSERT_EQ(childNode3, childNode2->getNextSibling());
     ASSERT_EQ(NULL, childNode3->getNextSibling());
     ASSERT_EQ(childNode2, childNode3->getPrevSibling());
+
+    delete parent1;
+    delete parent2;
+    delete parent3;
 }
 
 TEST(NodeTest, isOverflowing)
