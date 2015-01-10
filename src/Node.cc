@@ -122,6 +122,12 @@ void Node::insertNonLeafEntry(const boost::shared_ptr<NodeEntry> &entry)
         throw std::runtime_error("The node is overflowing.");
     }
 
+    if(this->nextSibling)
+        assert(this->leaf == this->nextSibling->leaf);
+
+    if(this->prevSibling)
+        assert(this->leaf == this->prevSibling->leaf);
+
     entry->ptr->setParent(this);
 
     //Insert the entry in the correct position according
@@ -167,17 +173,19 @@ void Node::insertNonLeafEntry(const boost::shared_ptr<NodeEntry> &entry)
         nextSib = (*nextIt)->ptr;
     }
 
-    (*it)->ptr->prevSibling = prevSib;
-    (*it)->ptr->nextSibling = nextSib;
+    entry->ptr->prevSibling = prevSib;
+    entry->ptr->nextSibling = nextSib;
 
     if(prevSib!=NULL)
     {
         prevSib->nextSibling = (*it)->ptr;
+        assert(entry->ptr->leaf == prevSib->leaf);
     }
 
     if(nextSib!=NULL)
     {
         nextSib->prevSibling = (*it)->ptr;
+        assert(entry->ptr->leaf == nextSib->leaf);
     }
 }
 
@@ -185,34 +193,62 @@ void Node::insertNonLeafEntry(const boost::shared_ptr<NodeEntry> &entry)
 void Node::adjustMBR()
 {
     assert(this->entries.size() > 0);
-
     EntryIterator it = this->entries.begin();
 
-    std::vector<boost::uint64_t> lower = (*it)->mbr->getLower();
-    std::vector<boost::uint64_t> upper = (*it)->mbr->getUpper();
-
-    ++it;
-
-    for(; it!=this->entries.end(); ++it)
+    if(this->leaf)
     {
-        const std::vector<boost::uint64_t>& low = (*it)->mbr->getLower();
-        const std::vector<boost::uint64_t>& up = (*it)->mbr->getUpper();
+        std::vector<boost::uint64_t> lower = (*it)->mbr->getLower();
+        std::vector<boost::uint64_t> upper = (*it)->mbr->getUpper();
+        ++it;
 
-        for (size_t i = 0; i < low.size(); ++i)
+        for(; it!=this->entries.end(); ++it)
         {
-            if (lower[i] > low[i])
-            {
-                lower[i] = low[i];
-            }
+            const std::vector<boost::uint64_t>& low = (*it)->mbr->getLower();
+            const std::vector<boost::uint64_t>& up = (*it)->mbr->getUpper();
 
-            if (upper[i] < up[i])
+            for (size_t i = 0; i < low.size(); ++i)
             {
-                upper[i] = up[i];
+                if (lower[i] > low[i])
+                {
+                    lower[i] = low[i];
+                }
+
+                if (upper[i] < up[i])
+                {
+                    upper[i] = up[i];
+                }
             }
         }
-    }
 
-    this->mbr.reset(new Rectangle(lower, upper));
+        this->mbr.reset(new Rectangle(lower, upper));
+    }
+    else
+    {
+        std::vector<boost::uint64_t> lower = (*it)->ptr->getMBR()->getLower();
+        std::vector<boost::uint64_t> upper = (*it)->ptr->getMBR()->getUpper();
+        ++it;
+
+        for(; it!=this->entries.end(); ++it)
+        {
+            const std::vector<boost::uint64_t>& low = (*it)->ptr->getMBR()->getLower();
+            const std::vector<boost::uint64_t>& up = (*it)->ptr->getMBR()->getUpper();
+
+            for (size_t i = 0; i < low.size(); ++i)
+            {
+                if (lower[i] > low[i])
+                {
+                    lower[i] = low[i];
+                }
+
+                if (upper[i] < up[i])
+                {
+                    upper[i] = up[i];
+                }
+            }
+        }
+
+        this->mbr.reset(new Rectangle(lower, upper));
+    }
 }
 
 void Node::adjustLHV()
@@ -220,14 +256,30 @@ void Node::adjustLHV()
     assert(this->entries.size() > 0);
     EntryIterator it = this->entries.begin();
 
-    this->lhv = (*it)->lhv;
-    ++it;
-
-    for(; it!=this->entries.end(); ++it)
+    if(this->isLeaf())
     {
-        if( (*(this->lhv.get())) < (*((*it)->lhv.get())))
+        this->lhv = (*it)->lhv;
+        ++it;
+
+        for(; it!=this->entries.end(); ++it)
         {
-            this->lhv = (*it)->lhv;
+            if( (*(this->lhv.get())) < (*((*it)->lhv.get())))
+            {
+                this->lhv = (*it)->lhv;
+            }
+        }
+    }
+    else
+    {
+        this->lhv = (*it)->ptr->getLHV();
+        ++it;
+
+        for(; it!=this->entries.end(); ++it)
+        {
+            if( (*(this->lhv.get())) < (*((*it)->ptr->getLHV().get())))
+            {
+                this->lhv = (*it)->ptr->getLHV();
+            }
         }
     }
 }
@@ -244,17 +296,18 @@ std::list<Node *> Node::getSiblings(boost::uint32_t siblingsNo)
 
     while (result.size() < siblingsNo)
     {
-        if(right!=NULL)
+        if(left!=NULL )
+        {
+            result.push_front(left);
+            left = left->prevSibling;
+        }
+
+        if(right!=NULL && result.size() < siblingsNo)
         {
             result.push_back(right);
             right=right->nextSibling;
         }
 
-        if(left!=NULL && result.size() < siblingsNo)
-        {
-            result.push_front(left);
-            left = left->prevSibling;
-        }
 
         if(right==NULL && left == NULL)
         {

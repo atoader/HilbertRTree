@@ -2,7 +2,7 @@
 #include "../src/RTreeHelper.hh"
 #include "../src/Constants.hh"
 
-TEST(RTreeHelperTest, chooseLeaf)
+TEST(RTreeHelperTest, DISABLED_chooseLeaf)
 {
     std::vector<boost::uint64_t> lower1(2, 1);
     std::vector<boost::uint64_t> upper1(2, 1);
@@ -163,7 +163,148 @@ TEST(RTreeHelperTest, searchNonLeaf)
     delete parent;
 }
 
-TEST(RTreeHelperTest, redistributeEntries)
+TEST(RTreeHelperTest, redistributeEntries_1)
 {
+    EntryMultiSet entries;
+    std::list<Node *> nodes;
+    Node* node1 = new Node(MAX_NODE_ENTRIES);
+    node1->setLeaf(true);
+    nodes.push_back(node1);
+
+    Node* node2 = new Node(MAX_NODE_ENTRIES);
+    node2->setLeaf(true);
+    nodes.push_back(node2);
+
+    for(int i=0; i<MAX_NODE_ENTRIES*2-1; i++)
+    {
+        std::vector<boost::uint64_t> l(2, 1);
+        std::vector<boost::uint64_t> u(2, 1);
+        boost::shared_ptr<Rectangle> rectangle(new Rectangle(l, u));
+        boost::shared_ptr<HilbertValue> hv(new HilbertValue(rectangle->getCenter()));
+
+        boost::shared_ptr<NodeEntry>  entry( new NodeEntry(hv, rectangle, NULL, NULL));
+
+        entries.insert(entry);
+    }
+
+    RTreeHelper::redistributeEntries(entries, nodes);
+
+    ASSERT_EQ(MAX_NODE_ENTRIES, node1->getEntries().size());
+    ASSERT_EQ(MAX_NODE_ENTRIES-1, node2->getEntries().size());
+
+    delete node1;
+    delete node2;
+}
+
+
+TEST(RTreeHelperTest, redistributeEntries_2)
+{
+    //TODO:Refactor to make this testable without the global constant MAX_NODE_ENTRIES
+
+    EntryMultiSet entries;
+    std::list<Node *> nodes;
+    Node* node1 = new Node(MAX_NODE_ENTRIES);
+    node1->setLeaf(true);
+    nodes.push_back(node1);
+
+    Node* node2 = new Node(MAX_NODE_ENTRIES);
+    node2->setLeaf(true);
+    nodes.push_back(node2);
+
+    for(int i=0; i<2*MAX_NODE_ENTRIES; i++)
+    {
+        std::vector<boost::uint64_t> l(2, 1);
+        std::vector<boost::uint64_t> u(2, 1);
+        boost::shared_ptr<Rectangle> rectangle(new Rectangle(l, u));
+        boost::shared_ptr<HilbertValue> hv(new HilbertValue(rectangle->getCenter()));
+
+        boost::shared_ptr<NodeEntry>  entry( new NodeEntry(hv, rectangle, NULL, NULL));
+
+        entries.insert(entry);
+    }
+
+    RTreeHelper::redistributeEntries(entries, nodes);
+
+    ASSERT_EQ(MAX_NODE_ENTRIES, node1->getEntries().size());
+    ASSERT_EQ(MAX_NODE_ENTRIES, node2->getEntries().size());
+
+    delete node1;
+    delete node2;
+}
+
+TEST(RTreeHelperTest, handleOverflow_1)
+{
+    //One node, no siblings
+    Node* node1 = new Node(MAX_NODE_ENTRIES);
+    node1->setLeaf(true);
+
+    for(int i=0; i<MAX_NODE_ENTRIES; i++)
+    {
+        std::vector<boost::uint64_t> l(2, i);
+        std::vector<boost::uint64_t> u(2, i);
+        boost::shared_ptr<Rectangle> rectangle(new Rectangle(l, u));
+        boost::shared_ptr<HilbertValue> hv(new HilbertValue(rectangle->getCenter()));
+
+        boost::shared_ptr<NodeEntry>  entry( new NodeEntry(hv, rectangle, NULL, NULL));
+        node1->insertLeafEntry(entry);
+    }
+    //The node is full
+
+    std::vector<boost::uint64_t> l(2, 0);
+    std::vector<boost::uint64_t> u(2, 0);
+    boost::shared_ptr<Rectangle> rectangle(new Rectangle(l, u));
+    boost::shared_ptr<HilbertValue> hv(new HilbertValue(rectangle->getCenter()));
+
+    boost::shared_ptr<NodeEntry>  entry( new NodeEntry(hv, rectangle, NULL, NULL));
+
+    Node* node2 = RTreeHelper::handleOverflow(node1, entry, true);
+
+    ASSERT_EQ(MAX_NODE_ENTRIES/2,node1->getEntries().size());
+    ASSERT_EQ(MAX_NODE_ENTRIES/2+1,node2->getEntries().size());
+
+    ASSERT_EQ(node1,node2->getNextSibling());
+    ASSERT_EQ(NULL,node2->getPrevSibling());
+
+    ASSERT_EQ(NULL,node1->getNextSibling());
+    ASSERT_EQ(node2,node1->getPrevSibling());
+}
+
+TEST(RTreeHelperTest, DISABLED_handleOverflow_2)
+{
+    //One node, one sibling
+    Node* node1 = new Node(MAX_NODE_ENTRIES);
+    node1->setLeaf(true);
+
+    Node* node2 = new Node(MAX_NODE_ENTRIES);
+    node2->setLeaf(true);
+
+    node1->setNextSibling(node2);
+    node2->setPrevSibling(node1);
+
+    for(int i=0; i<MAX_NODE_ENTRIES; i++)
+    {
+        std::vector<boost::uint64_t> l(2, i);
+        std::vector<boost::uint64_t> u(2, i);
+        boost::shared_ptr<Rectangle> rectangle(new Rectangle(l, u));
+        boost::shared_ptr<HilbertValue> hv(new HilbertValue(rectangle->getCenter()));
+
+        boost::shared_ptr<NodeEntry>  entry( new NodeEntry(hv, rectangle, NULL, NULL));
+        node1->insertLeafEntry(entry);
+    }
+    //The node is full
+
+    std::vector<boost::uint64_t> l(2, 0);
+    std::vector<boost::uint64_t> u(2, 0);
+    boost::shared_ptr<Rectangle> rectangle(new Rectangle(l, u));
+    boost::shared_ptr<HilbertValue> hv(new HilbertValue(rectangle->getCenter()));
+
+    boost::shared_ptr<NodeEntry>  entry( new NodeEntry(hv, rectangle, NULL, NULL));
+
+    Node* node3 = RTreeHelper::handleOverflow(node1, entry, true);
+
+    ASSERT_EQ(NULL, node3);
+
+    ASSERT_EQ(MAX_NODE_ENTRIES/2+1,node1->getEntries().size());
+    ASSERT_EQ(MAX_NODE_ENTRIES/2,node2->getEntries().size());
 
 }

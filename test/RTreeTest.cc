@@ -1,5 +1,6 @@
 #include "gtest.h"
 #include "../src/RTree.hh"
+#include "../src/RTreeHelper.hh"
 
 TEST(RTreeTest, Constructor)
 {
@@ -12,21 +13,28 @@ TEST(RTreeTest, Constructor)
 
 TEST(RTreeTest, insert)
 {
-//    RTree tree;
+    RTree tree;
+    int nodeNo = 20;
 
-//    for(int i=0; i<10; i++)
-//    {
-//        std::vector<boost::uint64_t> lower(2, i);
-//        std::vector<boost::uint64_t> upper(2, i);
-//        boost::shared_ptr<Rectangle> rect(new Rectangle(lower, upper));
-//        tree.insert(rect, NULL);
-//    }
+    for(int i=0; i<nodeNo; i++)
+    {
+        std::vector<boost::uint64_t> lower(2, i);
+        std::vector<boost::uint64_t> upper(2, i);
+        boost::shared_ptr<Rectangle> rect(new Rectangle(lower, upper));
+        if(i==8){
+            int a=2;
+        }
+        tree.insert(rect, NULL);
+    }
 
-//    std::vector<boost::uint64_t> lower(2, 0);
-//    std::vector<boost::uint64_t> upper(2, 10);
-//    boost::shared_ptr<Rectangle> rect(new Rectangle(lower, upper));
+    RTreeHelper::debug(tree.getRoot());
 
-//    std::list<boost::shared_ptr<NodeEntry> >result= tree.search(rect);
-//    ASSERT_EQ(10, result.size());
+    std::vector<boost::uint64_t> lower(2, 0);
+    std::vector<boost::uint64_t> upper(2, 10);
+    boost::shared_ptr<Rectangle> rect(new Rectangle(lower, upper));
+
+    std::list<boost::shared_ptr<NodeEntry> >result= tree.search(rect);
+    ASSERT_EQ(nodeNo, result.size());
+
 
 }

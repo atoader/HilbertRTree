@@ -42,7 +42,7 @@ public:
      * @param entry
      * @return
      */
-    static Node* handleOverflow(Node* target, const boost::shared_ptr<NodeEntry>& entry);
+    static Node* handleOverflow(Node* target, const boost::shared_ptr<NodeEntry>& entry, bool leaf=false);
 
     /**
      * @brief adjustTree Adjust the tree following an insertion or a deletion.
@@ -54,6 +54,11 @@ public:
      * @return The new root of the tree.
      */
     static Node* adjustTree(Node* root, Node*N, Node* NN, bool overflowed);
+
+    static void debug(Node* root);
+
+    static std::string listNodeLinks(Node* node, std::ofstream& ofs);
+    static std::string listNodes(Node* node, std::ofstream& ofs);
 
 };
 

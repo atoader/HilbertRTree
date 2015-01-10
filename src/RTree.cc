@@ -59,9 +59,12 @@ void RTree::insert(const boost::shared_ptr<Rectangle> &rect, char *data)
     {
         overflowed = true;
         //Handle the overflow of the new node.
-        NN =  RTreeHelper::handleOverflow(L,newEntry);
+        NN =  RTreeHelper::handleOverflow(L,newEntry, true);
     }
 
     this->root = RTreeHelper::adjustTree(this->root,L, NN, overflowed);
 }
-
+Node *RTree::getRoot() const
+{
+    return root;
+}

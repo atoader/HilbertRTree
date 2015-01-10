@@ -39,9 +39,12 @@ public:
      * @param data The data item to insert. The RTree becomes the owner of this item.
      */
     void insert(const boost::shared_ptr<Rectangle>& rect, char* data);
+
+    Node *getRoot() const;
+
 private:
     //Root of this RTree
-    Node* root;    
+    Node* root;
 
 //  Node* handleLeafOverflow(Node* leaf, const Rectangle& rect,
 //            const HilbertValue& h, char* data);

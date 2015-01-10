@@ -24,11 +24,11 @@ NodeEntry::NodeEntry(boost::shared_ptr<HilbertValue> lhv,
 
 NodeEntry::~NodeEntry()
 {
-    if(this->ptr !=NULL)
-    {
-        delete this->ptr;
-        this->ptr = NULL;
-    }
+//    if(this->ptr !=NULL)
+//    {
+//        delete this->ptr;
+//        this->ptr = NULL;
+//    }
 
     if(this->data != NULL)
     {

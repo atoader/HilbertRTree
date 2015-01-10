@@ -1,3 +1,8 @@
+#include <algorithm>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+
 #include "RTreeHelper.hh"
 #include "Constants.hh"
 
@@ -67,38 +72,42 @@ std::list<boost::shared_ptr<NodeEntry> > RTreeHelper::search(Node *subtreeRoot, 
 
 void RTreeHelper::redistributeEntries(EntryMultiSet &entries, std::list<Node *> siblings)
 {
-    //Distribute the entries evenly
-    int batchSize = entries.size() / siblings.size() + 1;
+    unsigned long batchSize = std::min(MAX_NODE_ENTRIES, entries.size()/siblings.size()+1);
 
-    int currentBatchSize = 0;
-    std::list<Node*>::iterator siblingIt = siblings.begin();
-    EntryMultiSet::iterator entriesIt = entries.begin();
-    EntryMultiSet::iterator entriesBeginCopy = entries.begin();
+    std::list<Node*>::iterator siblingsIt = siblings.begin();
 
-    while (entriesIt != entries.end() && siblingIt != siblings.end())
+    (*siblingsIt)->getEntries().clear();
+
+    unsigned long currentBatch = 0;
+
+    for(EntryMultiSet::iterator entryIt = entries.begin(); entryIt !=entries.end(); entryIt++)
     {
-        currentBatchSize++;
-        entriesIt++;
-
-        if (currentBatchSize == batchSize)
+        if((*entryIt)->ptr==NULL)
         {
-            //Replace the current entries of the set with the new ones
-            (*siblingIt)->getEntries().clear();
-            (*siblingIt)->getEntries().insert(entriesBeginCopy, entriesIt);
-            currentBatchSize = 0;
-            siblingIt++;
-            entriesBeginCopy = entriesIt;
+            (*siblingsIt)->insertLeafEntry((*entryIt));
+        }
+        else
+        {
+            (*siblingsIt)->insertNonLeafEntry((*entryIt));
+        }
+
+        currentBatch++;
+
+        if(currentBatch ==  batchSize && (++siblingsIt)!=siblings.end())
+        {
+            (*siblingsIt)->getEntries().clear();
+            currentBatch = 0;
         }
     }
 
-    if(siblingIt!=siblings.end())
+    for(siblingsIt=siblings.begin(); siblingsIt!=siblings.end(); ++siblingsIt)
     {
-        (*siblingIt)->getEntries().clear();
-        (*siblingIt)->getEntries().insert(entriesBeginCopy, entriesIt);
+        (*siblingsIt)->adjustLHV();
+        (*siblingsIt)->adjustLHV();
     }
 }
 
-Node *RTreeHelper::handleOverflow(Node *target, const boost::shared_ptr<NodeEntry> &entry)
+Node *RTreeHelper::handleOverflow(Node *target, const boost::shared_ptr<NodeEntry> &entry, bool leaf)
 {
     //List of entries from the cooperating nodes
     EntryMultiSet entries;
@@ -112,35 +121,46 @@ Node *RTreeHelper::handleOverflow(Node *target, const boost::shared_ptr<NodeEntr
 
     for(std::list<Node*>::iterator it = siblings.begin(); it!=siblings.end(); ++it)
     {
+        assert((*it)->isLeaf()==leaf);
         entries.insert((*it)->getEntries().begin(), (*it)->getEntries().end());
     }
 
     //If there is not enough room, create e new node
     if (entries.size() > siblings.size() * MAX_NODE_ENTRIES)
     {
-        //TODO:Recheck logic
+        //The new node is a sibling of the target.
         newNode = new Node(MAX_NODE_ENTRIES);
-        Node* prevSib = siblings.front()->getPrevSibling();
-        newNode->setPrevSibling( prevSib);
 
+        newNode->setLeaf(leaf);
+
+        Node* prevSib = siblings.front()->getPrevSibling();
+
+        newNode->setPrevSibling(prevSib);
         if(prevSib!=NULL)
         {
+            assert(prevSib->isLeaf()==newNode->isLeaf());
             prevSib->setNextSibling(newNode);
         }
-        newNode->setNextSibling(siblings.front());
 
+        newNode->setNextSibling(siblings.front());
+        siblings.front()->setPrevSibling(newNode);
+
+        assert(siblings.front()->isLeaf()==newNode->isLeaf());
         siblings.push_front(newNode);
     }
 
     RTreeHelper::redistributeEntries(entries, siblings);
+
+    for(std::list<Node*>::iterator it = siblings.begin(); it!=siblings.end(); ++it)
+    {
+        assert((*it)->isLeaf()==leaf);
+    }
 
     return newNode;
 }
 
 Node *RTreeHelper::adjustTree(Node* root,Node *N, Node *NN, bool overflowed)
 {
-    //The parent of the node being updated
-    Node* Np = N->getParent();
     //Node that is created if the parent needs to be split
     Node* PP = NULL;
     //Flag determining if a new node was created
@@ -152,22 +172,39 @@ Node *RTreeHelper::adjustTree(Node* root,Node *N, Node *NN, bool overflowed)
     //The new root
     Node* newRoot = root;
 
-
     bool ok = true;
 
     while (ok)
     {
+        N->adjustLHV();
+        N->adjustMBR();
+
+        if(NN)
+        {
+            NN->adjustLHV();
+            NN->adjustMBR();
+        }
+
+        //The parent of the node being updated
+        Node* Np = N->getParent();
+
         if (Np == NULL)
         {
             //We are at the root and we must exit the loop
             ok = false;
             if (NN != NULL)
             {
-                shared_ptr<NodeEntry> n1(new NodeEntry(N->getLHV(), N->getMBR(), N, NULL));
-                shared_ptr<NodeEntry> n2(new NodeEntry(NN->getLHV(), NN->getMBR(), NN, NULL));
+                shared_ptr<NodeEntry> n(new NodeEntry(N->getLHV(), N->getMBR(), N, NULL));
+                shared_ptr<NodeEntry> nn(new NodeEntry(NN->getLHV(), NN->getMBR(), NN, NULL));
+
                 newRoot = new Node(MAX_NODE_ENTRIES);
-                newRoot->insertNonLeafEntry(n1);
-                newRoot->insertNonLeafEntry(n2);
+                //This will not be a leaf
+                newRoot->setLeaf(false);
+                newRoot->insertNonLeafEntry(n);
+                newRoot->insertNonLeafEntry(nn);
+
+                newRoot->adjustLHV();
+                newRoot->adjustMBR();
             }
         }
         else
@@ -195,8 +232,14 @@ Node *RTreeHelper::adjustTree(Node* root,Node *N, Node *NN, bool overflowed)
 
             if(overflowed)
             {
+                //The siblings only need to be updated if an overflow took place
                 std::list<Node*> siblings =  N->getSiblings(SIBLINGS_NO);
                 S.insert(siblings.begin(), siblings.end());
+            }
+            else
+            {
+                //If no overflow happened, we need to have at least the modified node
+                S.insert(N);
             }
 
             for (std::set<Node*>::iterator node = S.begin(); node != S.end();
@@ -215,10 +258,70 @@ Node *RTreeHelper::adjustTree(Node* root,Node *N, Node *NN, bool overflowed)
             N = Np;
             NN = PP;
             overflowed = newOverflow;
+            S.clear();
+            P.clear();
         }
     }
 
     return newRoot;
 }
 
+void RTreeHelper::debug(Node *root)
+{
+    if(root->getParent()==NULL)
+    {
+        std::ofstream of("graph.txt");
+
+        of<<"digraph g { \n forcelabels=true;\n";
+        of<<RTreeHelper::listNodes(root, of);
+        of<<RTreeHelper::listNodeLinks(root, of);
+        of<<"}";
+
+        of.close();
+    }
+}
+
+std::string RTreeHelper::listNodeLinks(Node* node, std::ofstream& ofs)
+{
+    std::stringstream ss;
+
+    // ss<<(boost::uint64_t)node << " -> "<<(boost::uint64_t)node->getNextSibling()<<";\n";
+    //ss<<(boost::uint64_t)node->getPrevSibling()<< " -> "<<(boost::uint64_t)node <<";\n";
+
+    for(EntryMultiSet::iterator it = node->getEntries().begin(); it!=node->getEntries().end(); ++it)
+    {
+        if((*it)->ptr!=NULL)
+        {
+            ss<<(boost::uint64_t)node << " -> "<<(boost::uint64_t)(*it)->ptr<<";\n";
+            ss<<RTreeHelper::listNodeLinks((*it)->ptr, ofs);
+        }
+        else
+        {
+            ss<<(boost::uint64_t)node << " -> "<<(boost::uint64_t)(boost::uint64_t)(*it).get()<<";\n";
+        }
+    }
+
+    return ss.str();
+}
+
+std::string RTreeHelper::listNodes(Node* node, std::ofstream& ofs)
+{
+    std::stringstream ss;
+
+    ss<<(boost::uint64_t)node<<" [label=\""<<node->getMBR()->getLower()[0]<<","<<node->getMBR()->getLower()[1]<<"\n"<<node->getMBR()->getUpper()[0]<<","<<node->getMBR()->getUpper()[1]<<"\"];\n";
+
+    for(EntryMultiSet::iterator it = node->getEntries().begin(); it!=node->getEntries().end(); ++it)
+    {
+        if((*it)->ptr!=NULL)
+        {
+            ss<<RTreeHelper::listNodes((*it)->ptr, ofs);
+        }
+        else
+        {
+            ss<<(boost::uint64_t)(*it).get()<<" [label=\""<<(*it).get()->mbr->getLower()[0]<<","<<(*it).get()->mbr->getLower()[1]<<"\n"<<(*it).get()->mbr->getUpper()[0]<<","<<(*it).get()->mbr->getUpper()[1]<<"\"];\n";
+        }
+    }
+
+    return ss.str();
+}
 
