@@ -287,7 +287,7 @@ TEST(RTreeHelperTest, handleOverflow_1)
     delete node2;
 }
 
-TEST(RTreeHelperTest, handleOverflow_2)
+TEST(RTreeHelperTest, DISABLED_handleOverflow_2)
 {
     std::list<Node*> siblings;
 

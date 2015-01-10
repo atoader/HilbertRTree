@@ -42,9 +42,6 @@ void RTree::insert(const boost::shared_ptr<Rectangle> &rect)
     //Create a new entry to insert
     boost::shared_ptr<LeafEntry> newEntry(new LeafEntry(rect, h));
 
-    //Variable to keep track if an overflow has occured.
-    bool overflowed = false;
-
     //Node that is created if an overflow occurs.
     Node* NN = NULL;
 
@@ -56,15 +53,15 @@ void RTree::insert(const boost::shared_ptr<Rectangle> &rect)
     {
         //If there is room in the leaf, insert the entry
         L->insertLeafEntry(newEntry);
+        out_siblings.push_back(L);
     }
     else
     {
-        overflowed = true;
         //Handle the overflow of the new node.
         NN =  RTreeHelper::handleOverflow(L, newEntry, out_siblings);
     }
 
-    this->root = RTreeHelper::adjustTree(this->root,L, NN, overflowed, out_siblings);
+    this->root = RTreeHelper::adjustTree(this->root,L, NN, out_siblings);
 }
 Node *RTree::getRoot() const
 {

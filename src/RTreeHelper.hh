@@ -54,7 +54,7 @@ public:
      * @param overflowed True if N reached capacity.
      * @return The new root of the tree.
      */
-    static Node* adjustTree(Node* root, Node*N, Node* NN, bool overflowed,std::list<Node*>siblings);
+    static Node* adjustTree(Node* root, Node*N, Node* NN,std::list<Node*>siblings);
 
     static void debug(Node* root);
 

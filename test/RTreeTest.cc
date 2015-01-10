@@ -14,16 +14,13 @@ TEST(RTreeTest, Constructor)
 TEST(RTreeTest, insert)
 {
     RTree tree;
-    int nodeNo = 20;
+    int nodeNo = 200;
 
     for(int i=0; i<nodeNo; i++)
     {
         std::vector<boost::uint64_t> lower(2, i);
         std::vector<boost::uint64_t> upper(2, i);
         boost::shared_ptr<Rectangle> rect(new Rectangle(lower, upper));
-        if(i==8){
-            int a=2;
-        }
         tree.insert(rect);
     }
 

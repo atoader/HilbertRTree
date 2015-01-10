@@ -144,7 +144,7 @@ void Node::insertNonLeafEntry(const boost::shared_ptr<NonLeafEntry> &entry)
     entry->getNode()->prevSibling = prevSib;
     if(prevSib!=NULL)
     {
-        prevSib->nextSibling = boost::dynamic_pointer_cast<NonLeafEntry>(*it)->getNode();
+        prevSib->nextSibling = boost::dynamic_pointer_cast<NonLeafEntry>(entry)->getNode();
         assert(entry->getNode()->leaf == prevSib->leaf);
     }
 
@@ -170,7 +170,7 @@ void Node::insertNonLeafEntry(const boost::shared_ptr<NonLeafEntry> &entry)
     entry->getNode()->nextSibling = nextSib;
     if(nextSib!=NULL)
     {
-        nextSib->prevSibling = boost::dynamic_pointer_cast<NonLeafEntry>(*it)->getNode();
+        nextSib->prevSibling = boost::dynamic_pointer_cast<NonLeafEntry>(entry)->getNode();
         assert(entry->getNode()->leaf == nextSib->leaf);
     }
 }

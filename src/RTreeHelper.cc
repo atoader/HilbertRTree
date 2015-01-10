@@ -104,7 +104,7 @@ void RTreeHelper::redistributeEntries(EntryMultiSet &entries, std::list<Node *> 
     for(siblingsIt=siblings.begin(); siblingsIt!=siblings.end(); ++siblingsIt)
     {
         (*siblingsIt)->adjustLHV();
-        (*siblingsIt)->adjustLHV();
+        (*siblingsIt)->adjustMBR();
     }
 }
 
@@ -160,13 +160,11 @@ Node *RTreeHelper::handleOverflow(Node *target, const boost::shared_ptr<NodeEntr
     return newNode;
 }
 
-Node *RTreeHelper::adjustTree(Node* root,Node *N, Node *NN, bool overflowed, std::list<Node*>siblings)
+Node *RTreeHelper::adjustTree(Node* root,Node *N, Node *NN, std::list<Node*>siblings)
 {
     //Node that is created if the parent needs to be split
     Node* PP = NULL;
     //Flag determining if a new node was created
-    bool newOverflow = false;
-    //Set of sibling nodes
     std::set<Node*> S;
     S.insert(siblings.begin(), siblings.end());
     //Set of parent nodes of the sibling nodes
@@ -180,9 +178,6 @@ Node *RTreeHelper::adjustTree(Node* root,Node *N, Node *NN, bool overflowed, std
 
     while (ok)
     {
-        N->adjustLHV();
-        N->adjustMBR();
-
         //The parent of the node being updated
         Node* Np = N->getParent();
 
@@ -192,6 +187,9 @@ Node *RTreeHelper::adjustTree(Node* root,Node *N, Node *NN, bool overflowed, std
             ok = false;
             if (NN != NULL)
             {
+                N->adjustLHV();
+                N->adjustMBR();
+
                 NN->adjustLHV();
                 NN->adjustMBR();
 
@@ -201,9 +199,6 @@ Node *RTreeHelper::adjustTree(Node* root,Node *N, Node *NN, bool overflowed, std
                 newRoot = new Node(MAX_NODE_ENTRIES);
                 newRoot->insertNonLeafEntry(n);
                 newRoot->insertNonLeafEntry(nn);
-
-                newRoot->adjustLHV();
-                newRoot->adjustMBR();
             }
         }
         else
@@ -222,8 +217,6 @@ Node *RTreeHelper::adjustTree(Node* root,Node *N, Node *NN, bool overflowed, std
                 }
                 else
                 {
-                    newOverflow = true;
-
                     newSiblings.clear();
                     PP = RTreeHelper::handleOverflow(Np, nn, newSiblings);
                 }
@@ -244,13 +237,16 @@ Node *RTreeHelper::adjustTree(Node* root,Node *N, Node *NN, bool overflowed, std
 
             N = Np;
             NN = PP;
-            overflowed = newOverflow;
             S.clear();
             P.clear();
 
             S.insert(newSiblings.begin(), newSiblings.end());
         }
     }
+
+
+    newRoot->adjustLHV();
+    newRoot->adjustMBR();
 
     return newRoot;
 }
@@ -277,6 +273,11 @@ std::string RTreeHelper::listNodeLinks(Node* node, std::ofstream& ofs)
     // ss<<(boost::uint64_t)node << " -> "<<(boost::uint64_t)node->getNextSibling()<<";\n";
     //ss<<(boost::uint64_t)node->getPrevSibling()<< " -> "<<(boost::uint64_t)node <<";\n";
 
+    if(node->getMBR()->getLower()[0]==0 && node->getMBR()->getUpper()[0]==49)
+    {
+        int a=2;
+    }
+
     for(EntryMultiSet::iterator it = node->getEntries().begin(); it!=node->getEntries().end(); ++it)
     {
         if(!(*it)->isLeafEntry())
@@ -297,7 +298,12 @@ std::string RTreeHelper::listNodes(Node* node, std::ofstream& ofs)
 {
     std::stringstream ss;
 
-    ss<<(boost::uint64_t)node<<" [label=\""<<node->getMBR()->getLower()[0]<<","<<node->getMBR()->getLower()[1]<<"\n"<<node->getMBR()->getUpper()[0]<<","<<node->getMBR()->getUpper()[1]<<"\"];\n";
+    boost::shared_ptr<Rectangle> mbr = node->getMBR();
+    if(!!mbr)
+    {
+        ss<<(boost::uint64_t)node<<" [label=\""<<mbr->getLower()[0]<<","<<mbr->getLower()[1]<<"\n"<<mbr->getUpper()[0]<<","<<mbr->getUpper()[1]<<"\"];\n";
+    }
+
 
     for(EntryMultiSet::iterator it = node->getEntries().begin(); it!=node->getEntries().end(); ++it)
     {
