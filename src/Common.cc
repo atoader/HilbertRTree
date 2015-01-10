@@ -7,13 +7,10 @@
 
 #include "Common.hh"
 
-bool Common::nodeEntryComparison(const NodeEntry &first,
-                                 const NodeEntry &second)
-{
-    return (*first.lhv.get()) < (*second.lhv.get());
-}
 
-bool Common::nodeEntryComparisonObj::operator()(const boost::shared_ptr<NodeEntry> &first,const boost::shared_ptr<NodeEntry> &second) const
+bool Common::nodeEntryComparisonObj::operator()(const boost::shared_ptr<NodeEntry> &first,const boost::shared_ptr<NodeEntry> &second)  const
 {
-    return (*first->lhv.get()) < (*second->lhv.get());
+    HilbertValue& l =  (*first->getLHV().get());
+    HilbertValue& r = (*second->getLHV().get());
+    return l < r;
 }

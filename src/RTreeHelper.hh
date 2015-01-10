@@ -40,9 +40,10 @@ public:
      * @brief handleOverflow
      * @param target
      * @param entry
+     * @param out_siblings Will contain the target node, its siblings, and the new node if one was created
      * @return
      */
-    static Node* handleOverflow(Node* target, const boost::shared_ptr<NodeEntry>& entry, bool leaf=false);
+    static Node* handleOverflow(Node* target, const boost::shared_ptr<NodeEntry>& entry, std::list<Node*>& out_siblings);
 
     /**
      * @brief adjustTree Adjust the tree following an insertion or a deletion.
@@ -53,7 +54,7 @@ public:
      * @param overflowed True if N reached capacity.
      * @return The new root of the tree.
      */
-    static Node* adjustTree(Node* root, Node*N, Node* NN, bool overflowed);
+    static Node* adjustTree(Node* root, Node*N, Node* NN, bool overflowed,std::list<Node*>siblings);
 
     static void debug(Node* root);
 

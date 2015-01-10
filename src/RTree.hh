@@ -38,21 +38,13 @@ public:
      * @param rect The bounding box to insert
      * @param data The data item to insert. The RTree becomes the owner of this item.
      */
-    void insert(const boost::shared_ptr<Rectangle>& rect, char* data);
+    void insert(const boost::shared_ptr<Rectangle>& rect);
 
     Node *getRoot() const;
 
 private:
     //Root of this RTree
     Node* root;
-
-//  Node* handleLeafOverflow(Node* leaf, const Rectangle& rect,
-//            const HilbertValue& h, char* data);
-
-//  Node* handleNonLeafOverflow(Node*target, Node* toInsert);
-
-//  void adjustTree(Node* N, Node*NN, bool overflowed);
-
 };
 
 #endif /* RTREE_HH_ */

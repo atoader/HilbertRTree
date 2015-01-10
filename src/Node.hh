@@ -18,6 +18,8 @@
 #include "Rectangle.hh"
 #include "NodeEntry.hh"
 #include "Common.hh"
+#include "NonLeafEntry.hh"
+#include "LeafEntry.hh"
 
 struct Node
 {
@@ -55,14 +57,14 @@ struct Node
      * if and only if this node is a leaf node and the entry is a leaf entry
      * @param entry
      */
-    void insertLeafEntry(const boost::shared_ptr<NodeEntry>& entry);
+    void insertLeafEntry(const boost::shared_ptr<LeafEntry>& entry);
 
     /**
      * @brief insertNonLeafEntry Insert an entry into this node
      * if and onlly if this node is a non-leaf node and the entry is a non-leaf entry
      * @param entry
      */
-    void insertNonLeafEntry(const boost::shared_ptr<NodeEntry>& entry);
+    void insertNonLeafEntry(const boost::shared_ptr<NonLeafEntry>& entry);
 
     void adjustMBR();
 
@@ -76,7 +78,9 @@ struct Node
      */
     std::list<Node*> getSiblings(boost::uint32_t siblingsNo);
 
-    EntryMultiSet& getEntries();
+    const EntryMultiSet& getEntries() const;
+
+    void resetEntriesSet();
 
 private:
     boost::uint32_t capacity;

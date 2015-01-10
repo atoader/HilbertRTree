@@ -22,10 +22,11 @@ Node *RTreeHelper::chooseLeaf(Node *N, const boost::shared_ptr<HilbertValue> &h)
         {
             //Choose the entry that has the LHV at least equal to the value we have
             HilbertValue& searchedValue = *h.get();
-            HilbertValue& current = *(it->get()->lhv.get());
+            HilbertValue& current = *((*it)->getLHV().get());
             if( current > searchedValue)
             {
-                return RTreeHelper::chooseLeaf((*it)->ptr, h);
+                assert(!(*it)->isLeafEntry());
+                return RTreeHelper::chooseLeaf(boost::dynamic_pointer_cast<NonLeafEntry>(*it)->getNode(), h);
             }
         }
 
@@ -33,7 +34,7 @@ Node *RTreeHelper::chooseLeaf(Node *N, const boost::shared_ptr<HilbertValue> &h)
         //choose the last of the node entries
         --it;
 
-        return RTreeHelper::chooseLeaf( (*it)->ptr, h);
+        return RTreeHelper::chooseLeaf( boost::dynamic_pointer_cast<NonLeafEntry>(*it)->getNode(), h);
     }
 }
 
@@ -49,7 +50,7 @@ std::list<boost::shared_ptr<NodeEntry> > RTreeHelper::search(Node *subtreeRoot, 
     {
         for(it =entries.begin(); it!=entries.end(); ++it)
         {
-            if((*it)->mbr->intersects(*rect.get()))
+            if((*it)->getMBR()->intersects(*rect.get()))
             {
                 result.push_back(*it);
             }
@@ -59,9 +60,9 @@ std::list<boost::shared_ptr<NodeEntry> > RTreeHelper::search(Node *subtreeRoot, 
     {
         for(it = entries.begin(); it!=entries.end(); ++it)
         {
-            if((*it)->mbr->intersects(*rect.get()))
+            if((*it)->getMBR()->intersects(*rect.get()))
             {
-                aux = RTreeHelper::search((*it)->ptr, rect);
+                aux = RTreeHelper::search(boost::dynamic_pointer_cast<NonLeafEntry>(*it)->getNode(), rect);
                 result.insert(result.end(), aux.begin(), aux.end());
             }
         }
@@ -76,26 +77,26 @@ void RTreeHelper::redistributeEntries(EntryMultiSet &entries, std::list<Node *> 
 
     std::list<Node*>::iterator siblingsIt = siblings.begin();
 
-    (*siblingsIt)->getEntries().clear();
+    (*siblingsIt)->resetEntriesSet();
 
     unsigned long currentBatch = 0;
 
     for(EntryMultiSet::iterator entryIt = entries.begin(); entryIt !=entries.end(); entryIt++)
     {
-        if((*entryIt)->ptr==NULL)
+        if((*entryIt)->isLeafEntry())
         {
-            (*siblingsIt)->insertLeafEntry((*entryIt));
+            (*siblingsIt)->insertLeafEntry(boost::dynamic_pointer_cast<LeafEntry>(*entryIt));
         }
         else
         {
-            (*siblingsIt)->insertNonLeafEntry((*entryIt));
+            (*siblingsIt)->insertNonLeafEntry(boost::dynamic_pointer_cast<NonLeafEntry>(*entryIt));
         }
 
         currentBatch++;
 
         if(currentBatch ==  batchSize && (++siblingsIt)!=siblings.end())
         {
-            (*siblingsIt)->getEntries().clear();
+            (*siblingsIt)->resetEntriesSet();
             currentBatch = 0;
         }
     }
@@ -107,7 +108,7 @@ void RTreeHelper::redistributeEntries(EntryMultiSet &entries, std::list<Node *> 
     }
 }
 
-Node *RTreeHelper::handleOverflow(Node *target, const boost::shared_ptr<NodeEntry> &entry, bool leaf)
+Node *RTreeHelper::handleOverflow(Node *target, const boost::shared_ptr<NodeEntry> &entry,std::list<Node*>& out_siblings)
 {
     //List of entries from the cooperating nodes
     EntryMultiSet entries;
@@ -115,25 +116,25 @@ Node *RTreeHelper::handleOverflow(Node *target, const boost::shared_ptr<NodeEntr
     //Node that will be created if there is no room for redistribution
     Node* newNode=NULL;
 
-    std::list<Node*> siblings = target->getSiblings(SIBLINGS_NO);
+    out_siblings = target->getSiblings(SIBLINGS_NO);
 
     entries.insert(entry);
 
-    for(std::list<Node*>::iterator it = siblings.begin(); it!=siblings.end(); ++it)
+    for(std::list<Node*>::iterator it = out_siblings.begin(); it!=out_siblings.end(); ++it)
     {
-        assert((*it)->isLeaf()==leaf);
+        assert((*it)->isLeaf()==entry->isLeafEntry());
         entries.insert((*it)->getEntries().begin(), (*it)->getEntries().end());
     }
 
     //If there is not enough room, create e new node
-    if (entries.size() > siblings.size() * MAX_NODE_ENTRIES)
+    if (entries.size() > out_siblings.size() * MAX_NODE_ENTRIES)
     {
         //The new node is a sibling of the target.
         newNode = new Node(MAX_NODE_ENTRIES);
 
-        newNode->setLeaf(leaf);
+        newNode->setLeaf(entry->isLeafEntry());
 
-        Node* prevSib = siblings.front()->getPrevSibling();
+        Node* prevSib = out_siblings.front()->getPrevSibling();
 
         newNode->setPrevSibling(prevSib);
         if(prevSib!=NULL)
@@ -142,24 +143,24 @@ Node *RTreeHelper::handleOverflow(Node *target, const boost::shared_ptr<NodeEntr
             prevSib->setNextSibling(newNode);
         }
 
-        newNode->setNextSibling(siblings.front());
-        siblings.front()->setPrevSibling(newNode);
+        newNode->setNextSibling(out_siblings.front());
+        out_siblings.front()->setPrevSibling(newNode);
 
-        assert(siblings.front()->isLeaf()==newNode->isLeaf());
-        siblings.push_front(newNode);
+        assert(out_siblings.front()->isLeaf()==newNode->isLeaf());
+        out_siblings.push_front(newNode);
     }
 
-    RTreeHelper::redistributeEntries(entries, siblings);
+    RTreeHelper::redistributeEntries(entries, out_siblings);
 
-    for(std::list<Node*>::iterator it = siblings.begin(); it!=siblings.end(); ++it)
+    for(std::list<Node*>::iterator it = out_siblings.begin(); it!=out_siblings.end(); ++it)
     {
-        assert((*it)->isLeaf()==leaf);
+        assert((*it)->isLeaf()==entry->isLeafEntry());
     }
 
     return newNode;
 }
 
-Node *RTreeHelper::adjustTree(Node* root,Node *N, Node *NN, bool overflowed)
+Node *RTreeHelper::adjustTree(Node* root,Node *N, Node *NN, bool overflowed, std::list<Node*>siblings)
 {
     //Node that is created if the parent needs to be split
     Node* PP = NULL;
@@ -167,8 +168,11 @@ Node *RTreeHelper::adjustTree(Node* root,Node *N, Node *NN, bool overflowed)
     bool newOverflow = false;
     //Set of sibling nodes
     std::set<Node*> S;
+    S.insert(siblings.begin(), siblings.end());
     //Set of parent nodes of the sibling nodes
     std::set<Node*> P;
+
+    std::list<Node*> newSiblings;
     //The new root
     Node* newRoot = root;
 
@@ -179,12 +183,6 @@ Node *RTreeHelper::adjustTree(Node* root,Node *N, Node *NN, bool overflowed)
         N->adjustLHV();
         N->adjustMBR();
 
-        if(NN)
-        {
-            NN->adjustLHV();
-            NN->adjustMBR();
-        }
-
         //The parent of the node being updated
         Node* Np = N->getParent();
 
@@ -194,12 +192,13 @@ Node *RTreeHelper::adjustTree(Node* root,Node *N, Node *NN, bool overflowed)
             ok = false;
             if (NN != NULL)
             {
-                shared_ptr<NodeEntry> n(new NodeEntry(N->getLHV(), N->getMBR(), N, NULL));
-                shared_ptr<NodeEntry> nn(new NodeEntry(NN->getLHV(), NN->getMBR(), NN, NULL));
+                NN->adjustLHV();
+                NN->adjustMBR();
+
+                shared_ptr<NonLeafEntry> n(new NonLeafEntry(N));
+                shared_ptr<NonLeafEntry> nn(new NonLeafEntry(NN));
 
                 newRoot = new Node(MAX_NODE_ENTRIES);
-                //This will not be a leaf
-                newRoot->setLeaf(false);
                 newRoot->insertNonLeafEntry(n);
                 newRoot->insertNonLeafEntry(nn);
 
@@ -211,8 +210,11 @@ Node *RTreeHelper::adjustTree(Node* root,Node *N, Node *NN, bool overflowed)
         {
             if (NN != NULL)
             {
+                NN->adjustLHV();
+                NN->adjustMBR();
+
                 //Insert the entry containing the newly created node into the tree
-                shared_ptr<NodeEntry> nn(new NodeEntry(NN->getLHV(), NN->getMBR(), NN, NULL));
+                shared_ptr<NonLeafEntry> nn(new NonLeafEntry(NN));
                 //try to insert the new node into the parent
                 if (!Np->isOverflowing())
                 {
@@ -221,25 +223,10 @@ Node *RTreeHelper::adjustTree(Node* root,Node *N, Node *NN, bool overflowed)
                 else
                 {
                     newOverflow = true;
-                    PP = RTreeHelper::handleOverflow(Np, nn);
+
+                    newSiblings.clear();
+                    PP = RTreeHelper::handleOverflow(Np, nn, newSiblings);
                 }
-            }
-
-            if (NN!=NULL)
-            {
-                S.insert(NN);
-            }
-
-            if(overflowed)
-            {
-                //The siblings only need to be updated if an overflow took place
-                std::list<Node*> siblings =  N->getSiblings(SIBLINGS_NO);
-                S.insert(siblings.begin(), siblings.end());
-            }
-            else
-            {
-                //If no overflow happened, we need to have at least the modified node
-                S.insert(N);
             }
 
             for (std::set<Node*>::iterator node = S.begin(); node != S.end();
@@ -260,6 +247,8 @@ Node *RTreeHelper::adjustTree(Node* root,Node *N, Node *NN, bool overflowed)
             overflowed = newOverflow;
             S.clear();
             P.clear();
+
+            S.insert(newSiblings.begin(), newSiblings.end());
         }
     }
 
@@ -290,10 +279,10 @@ std::string RTreeHelper::listNodeLinks(Node* node, std::ofstream& ofs)
 
     for(EntryMultiSet::iterator it = node->getEntries().begin(); it!=node->getEntries().end(); ++it)
     {
-        if((*it)->ptr!=NULL)
+        if(!(*it)->isLeafEntry())
         {
-            ss<<(boost::uint64_t)node << " -> "<<(boost::uint64_t)(*it)->ptr<<";\n";
-            ss<<RTreeHelper::listNodeLinks((*it)->ptr, ofs);
+            ss<<(boost::uint64_t)node << " -> "<<(boost::uint64_t)(boost::dynamic_pointer_cast<NonLeafEntry>(*it)->getNode())<<";\n";
+            ss<<RTreeHelper::listNodeLinks(boost::dynamic_pointer_cast<NonLeafEntry>(*it)->getNode(), ofs);
         }
         else
         {
@@ -312,13 +301,13 @@ std::string RTreeHelper::listNodes(Node* node, std::ofstream& ofs)
 
     for(EntryMultiSet::iterator it = node->getEntries().begin(); it!=node->getEntries().end(); ++it)
     {
-        if((*it)->ptr!=NULL)
+        if(!(*it)->isLeafEntry())
         {
-            ss<<RTreeHelper::listNodes((*it)->ptr, ofs);
+            ss<<RTreeHelper::listNodes(boost::dynamic_pointer_cast<NonLeafEntry>(*it)->getNode(), ofs);
         }
         else
         {
-            ss<<(boost::uint64_t)(*it).get()<<" [label=\""<<(*it).get()->mbr->getLower()[0]<<","<<(*it).get()->mbr->getLower()[1]<<"\n"<<(*it).get()->mbr->getUpper()[0]<<","<<(*it).get()->mbr->getUpper()[1]<<"\"];\n";
+            ss<<(boost::uint64_t)(*it).get()<<" [label=\""<<(*it)->getMBR()->getLower()[0]<<","<<(*it)->getMBR()->getLower()[1]<<"\n"<<(*it)->getMBR()->getUpper()[0]<<","<<(*it)->getMBR()->getUpper()[1]<<"\"];\n";
         }
     }
 

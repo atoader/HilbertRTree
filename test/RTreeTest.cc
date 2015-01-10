@@ -24,13 +24,13 @@ TEST(RTreeTest, insert)
         if(i==8){
             int a=2;
         }
-        tree.insert(rect, NULL);
+        tree.insert(rect);
     }
 
     RTreeHelper::debug(tree.getRoot());
 
     std::vector<boost::uint64_t> lower(2, 0);
-    std::vector<boost::uint64_t> upper(2, 10);
+    std::vector<boost::uint64_t> upper(2, nodeNo);
     boost::shared_ptr<Rectangle> rect(new Rectangle(lower, upper));
 
     std::list<boost::shared_ptr<NodeEntry> >result= tree.search(rect);

@@ -32,13 +32,15 @@ std::list<boost::shared_ptr<NodeEntry> > RTree::search(const boost::shared_ptr<R
     return RTreeHelper::search(this->root, rect);
 }
 
-void RTree::insert(const boost::shared_ptr<Rectangle> &rect, char *data)
+void RTree::insert(const boost::shared_ptr<Rectangle> &rect)
 {
     //Compute the hilbert value of the center of the rectangle
     boost::shared_ptr<HilbertValue> h(new HilbertValue(rect->getCenter()));
 
+    std::list<Node*> out_siblings;
+
     //Create a new entry to insert
-    boost::shared_ptr<NodeEntry> newEntry(new NodeEntry(h,rect, NULL, data));
+    boost::shared_ptr<LeafEntry> newEntry(new LeafEntry(rect, h));
 
     //Variable to keep track if an overflow has occured.
     bool overflowed = false;
@@ -59,10 +61,10 @@ void RTree::insert(const boost::shared_ptr<Rectangle> &rect, char *data)
     {
         overflowed = true;
         //Handle the overflow of the new node.
-        NN =  RTreeHelper::handleOverflow(L,newEntry, true);
+        NN =  RTreeHelper::handleOverflow(L, newEntry, out_siblings);
     }
 
-    this->root = RTreeHelper::adjustTree(this->root,L, NN, overflowed);
+    this->root = RTreeHelper::adjustTree(this->root,L, NN, overflowed, out_siblings);
 }
 Node *RTree::getRoot() const
 {

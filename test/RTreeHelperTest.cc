@@ -2,7 +2,7 @@
 #include "../src/RTreeHelper.hh"
 #include "../src/Constants.hh"
 
-TEST(RTreeHelperTest, DISABLED_chooseLeaf)
+TEST(RTreeHelperTest, chooseLeaf)
 {
     std::vector<boost::uint64_t> lower1(2, 1);
     std::vector<boost::uint64_t> upper1(2, 1);
@@ -24,6 +24,9 @@ TEST(RTreeHelperTest, DISABLED_chooseLeaf)
     boost::shared_ptr<Rectangle> rect4(new Rectangle(lower4, upper4));
     boost::shared_ptr<HilbertValue> h4(new HilbertValue(rect4->getCenter()));
 
+    boost::shared_ptr<LeafEntry>  leaf1( new LeafEntry(rect1,h2));
+    boost::shared_ptr<LeafEntry>  leaf2( new LeafEntry(rect2,h3));
+    boost::shared_ptr<LeafEntry>  leaf3( new LeafEntry(rect3,h4));
 
     Node* leaf = new Node(MAX_NODE_ENTRIES);
     leaf->setLeaf(true);
@@ -32,15 +35,24 @@ TEST(RTreeHelperTest, DISABLED_chooseLeaf)
 
     Node* childNode1 = new Node(MAX_NODE_ENTRIES);
     childNode1->setLeaf(true);
-    boost::shared_ptr<NodeEntry>  entry1( new NodeEntry(h2, rect1, childNode1, NULL));
+    childNode1->insertLeafEntry(leaf1);
+    childNode1->adjustLHV();
+    childNode1->adjustMBR();
+    boost::shared_ptr<NonLeafEntry>  entry1( new NonLeafEntry(childNode1));
 
     Node* childNode2 = new Node(MAX_NODE_ENTRIES);
     childNode2->setLeaf(true);
-    boost::shared_ptr<NodeEntry>  entry2( new NodeEntry(h3, rect2, childNode2, NULL));
+    childNode2->insertLeafEntry(leaf2);
+    childNode2->adjustLHV();
+    childNode2->adjustMBR();
+    boost::shared_ptr<NonLeafEntry>  entry2(new NonLeafEntry(childNode2));
 
     Node* childNode3 = new Node(MAX_NODE_ENTRIES);
     childNode3->setLeaf(true);
-    boost::shared_ptr<NodeEntry>  entry3( new NodeEntry(h4, rect3, childNode3, NULL));
+    childNode3->insertLeafEntry(leaf3);
+    childNode3->adjustLHV();
+    childNode3->adjustMBR();
+    boost::shared_ptr<NonLeafEntry>  entry3( new NonLeafEntry(childNode3));
 
     Node* nonLeaf = new Node(MAX_NODE_ENTRIES);
 
@@ -48,7 +60,7 @@ TEST(RTreeHelperTest, DISABLED_chooseLeaf)
     nonLeaf->insertNonLeafEntry(entry2);
     nonLeaf->insertNonLeafEntry(entry1);
 
-    //If this looks confusing, look at the h* in new NodeEntry
+    // If this looks confusing, look at the h* in new NodeEntry
     ASSERT_EQ(childNode2,RTreeHelper::chooseLeaf(nonLeaf, h2));
 
     ASSERT_EQ(childNode3,RTreeHelper::chooseLeaf(nonLeaf, h3));
@@ -78,8 +90,8 @@ TEST(RTreeHelperTest, searchLeaf)
     Node* leaf = new Node(MAX_NODE_ENTRIES);
     leaf->setLeaf(true);
 
-    boost::shared_ptr<NodeEntry>  entry1( new NodeEntry(h1, rect1, NULL, NULL));
-    boost::shared_ptr<NodeEntry>  entry2( new NodeEntry(h2, rect2, NULL, NULL));
+    boost::shared_ptr<LeafEntry>  entry1( new LeafEntry(rect1, h1));
+    boost::shared_ptr<LeafEntry>  entry2( new LeafEntry(rect2, h2));
 
     std::list<boost::shared_ptr<NodeEntry> > r1 = RTreeHelper::search(leaf, rect1);
     ASSERT_EQ(0, r1.size());
@@ -94,7 +106,7 @@ TEST(RTreeHelperTest, searchLeaf)
 
     //No intersection
     std::list<boost::shared_ptr<NodeEntry> > r3 = RTreeHelper::search(leaf, rect3);
-    ASSERT_EQ(0, r1.size());
+    ASSERT_EQ(0, r3.size());
 
     std::vector<boost::uint64_t> lower4(2, 0);
     std::vector<boost::uint64_t> upper4(2, 4);
@@ -130,8 +142,8 @@ TEST(RTreeHelperTest, searchNonLeaf)
     Node* leaf = new Node(MAX_NODE_ENTRIES);
     leaf->setLeaf(true);
 
-    boost::shared_ptr<NodeEntry>  entry1( new NodeEntry(h1, rect1, NULL, NULL));
-    boost::shared_ptr<NodeEntry>  entry2( new NodeEntry(h2, rect2, NULL, NULL));
+    boost::shared_ptr<LeafEntry>  entry1( new LeafEntry(rect1, h1));
+    boost::shared_ptr<LeafEntry>  entry2( new LeafEntry(rect2, h2));
 
     leaf->insertLeafEntry(entry1);
     leaf->insertLeafEntry(entry2);
@@ -140,7 +152,7 @@ TEST(RTreeHelperTest, searchNonLeaf)
     leaf->adjustMBR();
 
     Node* parent = new Node(MAX_NODE_ENTRIES);
-    boost::shared_ptr<NodeEntry>  nonLeafEntry( new NodeEntry(leaf->getLHV(), leaf->getMBR(), leaf, NULL));
+    boost::shared_ptr<NonLeafEntry>  nonLeafEntry( new NonLeafEntry(leaf));
     parent->insertNonLeafEntry(nonLeafEntry);
 
     std::list<boost::shared_ptr<NodeEntry> > r1 = RTreeHelper::search(parent, rect3);
@@ -182,7 +194,7 @@ TEST(RTreeHelperTest, redistributeEntries_1)
         boost::shared_ptr<Rectangle> rectangle(new Rectangle(l, u));
         boost::shared_ptr<HilbertValue> hv(new HilbertValue(rectangle->getCenter()));
 
-        boost::shared_ptr<NodeEntry>  entry( new NodeEntry(hv, rectangle, NULL, NULL));
+        boost::shared_ptr<NodeEntry>  entry( new LeafEntry(rectangle, hv));
 
         entries.insert(entry);
     }
@@ -199,26 +211,28 @@ TEST(RTreeHelperTest, redistributeEntries_1)
 
 TEST(RTreeHelperTest, redistributeEntries_2)
 {
-    //TODO:Refactor to make this testable without the global constant MAX_NODE_ENTRIES
-
     EntryMultiSet entries;
     std::list<Node *> nodes;
     Node* node1 = new Node(MAX_NODE_ENTRIES);
-    node1->setLeaf(true);
     nodes.push_back(node1);
 
     Node* node2 = new Node(MAX_NODE_ENTRIES);
-    node2->setLeaf(true);
     nodes.push_back(node2);
 
     for(int i=0; i<2*MAX_NODE_ENTRIES; i++)
     {
-        std::vector<boost::uint64_t> l(2, 1);
-        std::vector<boost::uint64_t> u(2, 1);
+        std::vector<boost::uint64_t> l(2, i);
+        std::vector<boost::uint64_t> u(2, i);
         boost::shared_ptr<Rectangle> rectangle(new Rectangle(l, u));
         boost::shared_ptr<HilbertValue> hv(new HilbertValue(rectangle->getCenter()));
+        boost::shared_ptr<LeafEntry>  leafEntry( new LeafEntry(rectangle, hv));
+        Node* leaf = new Node(MAX_NODE_ENTRIES);
+        leaf->setLeaf(true);
+        leaf->insertLeafEntry(leafEntry);
+        leaf->adjustLHV();
+        leaf->adjustMBR();
 
-        boost::shared_ptr<NodeEntry>  entry( new NodeEntry(hv, rectangle, NULL, NULL));
+        boost::shared_ptr<NodeEntry>  entry( new NonLeafEntry(leaf));
 
         entries.insert(entry);
     }
@@ -237,6 +251,7 @@ TEST(RTreeHelperTest, handleOverflow_1)
     //One node, no siblings
     Node* node1 = new Node(MAX_NODE_ENTRIES);
     node1->setLeaf(true);
+    std::list<Node*> siblings;
 
     for(int i=0; i<MAX_NODE_ENTRIES; i++)
     {
@@ -245,7 +260,7 @@ TEST(RTreeHelperTest, handleOverflow_1)
         boost::shared_ptr<Rectangle> rectangle(new Rectangle(l, u));
         boost::shared_ptr<HilbertValue> hv(new HilbertValue(rectangle->getCenter()));
 
-        boost::shared_ptr<NodeEntry>  entry( new NodeEntry(hv, rectangle, NULL, NULL));
+        boost::shared_ptr<LeafEntry>  entry( new LeafEntry(rectangle, hv));
         node1->insertLeafEntry(entry);
     }
     //The node is full
@@ -255,9 +270,9 @@ TEST(RTreeHelperTest, handleOverflow_1)
     boost::shared_ptr<Rectangle> rectangle(new Rectangle(l, u));
     boost::shared_ptr<HilbertValue> hv(new HilbertValue(rectangle->getCenter()));
 
-    boost::shared_ptr<NodeEntry>  entry( new NodeEntry(hv, rectangle, NULL, NULL));
+    boost::shared_ptr<LeafEntry>  entry( new LeafEntry(rectangle, hv));
 
-    Node* node2 = RTreeHelper::handleOverflow(node1, entry, true);
+    Node* node2 = RTreeHelper::handleOverflow(node1, entry, siblings);
 
     ASSERT_EQ(MAX_NODE_ENTRIES/2,node1->getEntries().size());
     ASSERT_EQ(MAX_NODE_ENTRIES/2+1,node2->getEntries().size());
@@ -267,10 +282,15 @@ TEST(RTreeHelperTest, handleOverflow_1)
 
     ASSERT_EQ(NULL,node1->getNextSibling());
     ASSERT_EQ(node2,node1->getPrevSibling());
+
+    delete node1;
+    delete node2;
 }
 
-TEST(RTreeHelperTest, DISABLED_handleOverflow_2)
+TEST(RTreeHelperTest, handleOverflow_2)
 {
+    std::list<Node*> siblings;
+
     //One node, one sibling
     Node* node1 = new Node(MAX_NODE_ENTRIES);
     node1->setLeaf(true);
@@ -288,7 +308,7 @@ TEST(RTreeHelperTest, DISABLED_handleOverflow_2)
         boost::shared_ptr<Rectangle> rectangle(new Rectangle(l, u));
         boost::shared_ptr<HilbertValue> hv(new HilbertValue(rectangle->getCenter()));
 
-        boost::shared_ptr<NodeEntry>  entry( new NodeEntry(hv, rectangle, NULL, NULL));
+        boost::shared_ptr<LeafEntry>  entry( new LeafEntry(rectangle, hv));
         node1->insertLeafEntry(entry);
     }
     //The node is full
@@ -298,13 +318,15 @@ TEST(RTreeHelperTest, DISABLED_handleOverflow_2)
     boost::shared_ptr<Rectangle> rectangle(new Rectangle(l, u));
     boost::shared_ptr<HilbertValue> hv(new HilbertValue(rectangle->getCenter()));
 
-    boost::shared_ptr<NodeEntry>  entry( new NodeEntry(hv, rectangle, NULL, NULL));
+    boost::shared_ptr<LeafEntry>  entry( new LeafEntry(rectangle , hv));
 
-    Node* node3 = RTreeHelper::handleOverflow(node1, entry, true);
+    Node* node3 = RTreeHelper::handleOverflow(node1, entry,siblings);
 
     ASSERT_EQ(NULL, node3);
 
     ASSERT_EQ(MAX_NODE_ENTRIES/2+1,node1->getEntries().size());
     ASSERT_EQ(MAX_NODE_ENTRIES/2,node2->getEntries().size());
 
+    delete node1;
+    delete node2;
 }
