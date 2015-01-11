@@ -1,0 +1,7 @@
+doc/Report/*.aux
+doc/Report/*.bbl
+doc/Report/*.log
+doc/Report/*.blg
+doc/Report/*.out
+doc/Report/*.synctex.gz
+doc/Report/*.toc

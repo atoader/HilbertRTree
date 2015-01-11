@@ -1,0 +1,170 @@
+\documentclass[11pt, a4paper, oneside]{article}
+\usepackage[a4paper,top=3cm,bottom=3cm,left=3cm,right=3cm]{geometry}
+\usepackage{cite}
+\usepackage[show]{ed}
+\renewcommand{\familydefault}{\sfdefault}
+\usepackage{helvet}
+\usepackage{url}
+\usepackage{parskip}		%% blank lines between paragraphs, no indent
+\usepackage[pdftex]{graphicx}	%% include graphics, preferrably pdf
+\usepackage{wrapfig}
+\usepackage{xspace}
+\usepackage[pdftex]{hyperref}	%% many PDF options can be set here
+\usepackage{float} %%Use to put figures at an exact spot
+\pdfadjustspacing=1		%% force LaTeX-like character spacing
+\bibliographystyle{unsrt}
+\newcommand{\myname}{Alexandru Valentin Toader}
+\newcommand{\mytitle}{Space Filling Curve Index}
+\newcommand{\latex}{\LaTeX\xspace}
+\newcommand{\tex}{\TeX\xspace}
+\newcommand{\mytodo}[1]{\emph{{\color{red} #1 \\}}}
+\newcommand{\rplus}{R$^+$-tree$\,$}
+\newcommand{\rstar}{R$^*$-tree$\,$}
+\newcommand{\bplus}{B$^+$-tree$\,$}
+\usepackage{nameref}
+\usepackage{verbatim}
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage{graphicx}
+
+
+\hypersetup{
+  pdfauthor = {\myname},
+  pdftitle = {\mytitle},
+  pdfkeywords = {},
+  colorlinks = {false}
+}
+
+\begin{document}
+
+  \pagenumbering{roman}
+
+  \thispagestyle{empty}
+
+  \begin{flushright}
+   \includegraphics[scale=0.7]{bsc-logo}
+  \end{flushright}
+  \vspace{20mm}
+  \begin{center}
+    \huge
+    \textbf{\mytitle}
+  \end{center}
+  \vspace*{4mm}
+  \begin{center}
+   \Large by
+  \end{center}
+  \vspace*{4mm}
+  \begin{center}
+    \Large
+    \textbf{\myname}
+  \end{center}
+  \vspace*{20mm}
+  \begin{center}
+    \large
+    Big Data Project
+  \end{center}
+  \vfill
+  \vspace*{8mm}
+  \begin{flushleft}
+    \large
+    Date of Submission: \today \\
+    \rule{\textwidth}{1pt}
+  \end{flushleft}
+  \begin{center}
+    \Large Jacobs University --- School of Engineering and Science
+  \end{center}
+
+  \newpage
+
+
+\newpage
+\tableofcontents
+
+\clearpage
+\pagenumbering{arabic}
+
+\section{Introduction}
+%Talk about spatial databases
+An array database is a database that is optimized to store and query array(raster) data. Often, arrays are used to represent sensor, simulation, image or statistics data. Rasters can easily become n-dimensional terabyte objects and offering scalable, flexible storage, and flexible manipulation on them is one of the main qualities of array database management systems(DBMS). 
+
+There are many applications that benefit from efficient processing of array data such as: location-based services and geographic services.\todo{Add some more examples} These applications pose high requirements concerning the data and the operations that need to be supported, and therefore new techniques and tools are needed for increased processing efficiency.
+
+One of the main issues that arise when working with high dimensional, terabyte objects is how to store them in the underlying system while maintaining a high-performance level. Due to their size, array objects need to be divided into sub-arrays that can be easily managed by the underlying storage provider. In order to attain this, a system for indexing and retrieving fragments of n-dimensional objects must be provided.
+
+Rasdaman is the leading array DMBS and has been used in applications involving data ranging from 1-D measurement data to 4-D ocean and climate data. The rasdaman system partitions raster objects into tiles\cite{DBLP:conf/icde/FurtadoB99} which are indexed using a \rplus based mechanism. The individual tiles can be considered n-dimensional spatial objects (rectangles). This project was focused on researching the possibility of further improving the indexing mechanism of the rasdaman system.
+
+The purpose of this project was to design and implement an indexing mechanism for multidimensional data objects using the Hilbert R-Tree as the underlying data structure. 
+
+The B+ tree\todo{Cite the paper of B+ trees} has found wide adoption in the field of relational databases and represents the standard data structure for database index development. The task of storing, indexing and querying n-dimensional data is not well supported by indexes based on the B+ tree. 
+
+The R-tree, proposed by Antonin Guttman\todo{Add cite}, is the preferred method for indexing spatial data. The key idea is to group objects using their minimum bounding rectangle(MBR). Objects are added to a MBR within the index that will lead to the smallest increase in its size. The performance of R-trees depends on the quality of the algorithm that clusters the data rectangles on a node. 
+
+Rasdaman currently uses an implementation based on the \rplus. The \rplus is a compromise between R-trees and kd-trees: they avoid overlapping of internal nodes by inserting an object into multiple leaves if necessary. The \rplus offers increased point query performance over the original R-tree at the cost of a higher space utilization. 
+
+The original R-tree, proposed by Guttman, is the basis of a number of variations and improvements.\todo{Reference the book}. The R* tree is considered the most robust variant, and has found numerous applications, in both research and commercial systems.\todo{Rephrase} However, the empirical study in \todo{Add reference to 105} has shown that the Hilbert R-Tree can perform better than the other variants in some cases.
+
+Hilbert R-trees use the Hilbert space-filling curve\todo{cite Hilbert curve} to impose a linear ordering on the data rectangles with the goal of obtaining an improved clustering of the spatial objects.
+
+To the extent of my knowledge, there is no open-source C++ implementation of the Hilbert R-tree data structure and providing one will be of great value to the community.
+
+The initial specification for the project outlined the following objectives:
+\begin{itemize}
+\item Implement the Hilbert R-tree data structure
+\item Create a benchmark to test the performance of the indexing mechanism of the rasdaman system
+\item Integrate the Hilbert R-tree data structure into rasdaman database system.
+\end{itemize}
+
+The first two tasks have been successfully completed, while the third and last task has been left for future research.
+The remainder of this document is structured as follows: section \ref{sec:related} discusses the theoretical foundations and algorithms necessary for the implementation of the Hilbert R-tree, section \ref{hrtree} describes in detail the technical details of the Hilbert R-tree implementation, followed by a technical description of the benchmark procedure in section \ref{sec:benchmark}.
+The report ends with a discussion of the results and future work.
+
+\section{Related work}
+\label{sec:related}
+
+In this section, I give an overview of the theoretical foundations of the Hilbert R-tree and the current \rplus based implementation used in rasdaman.
+
+\subsection{R-tree}
+The R-tree data structure has been developed by Antonin Guttmann \todo{cite} and is a hierarchical data structure based on \bplus. They are used for the dynamic organization of a set of n-dimensional geometric objects represented by the n-dimensional minimum bounding rectangle. Each node of the R-tree corresponds to the MBR that bounds its children. Each non-leaf node contains, in addition to the MBR of its children, pointers to children nodes. The leaves of the tree contain pointer to the database objects instead of pointers to children nodes.\todo{Rephrase}
+
+The MBRs of different nodes may overlap each other and MBR can be contained (in the geometrical sense) in many nodes, but it can be associated to only one of them. This means that a query may visit many nodes before confirming the existence of a given MBR.
+
+An R-tree of order (m, M) has the following characteristics:
+\begin{itemize}
+\item Each leaf node (unless it is the root) can host at most M and at least $m\leq \frac{M}{2}$ entries. Each entry is of the form $(mbr, oid)$, such that $mbr$ is the MBR that spatially contains the object and $oid$ is the object's identifier.
+\item Each non-leaf node can store at most M and at least $m\leq \frac{M}{2}$ entries. Each entry is of the form $(mbr, p)$ where $p$ is a pointer to a child of the node and $mbr$ is the MBR that spatially contains the MBRs contained in this child.
+\item The minimum allowed number of entries in the root node is 2, unless it is a leaf (in this case, it may contain zero or a single entry)
+\item All leaves of the R-tree are at the same level.
+\end{itemize}
+
+The R-tree is a height-balanced tree with a maximum height of $h_{max}=[log_mN]-1$ where $N$ is the number of data rectangles contained. The data structure dynamic i.e. global reorganization is not required to handle insertions or deletions. 
+
+The R-tree supports the following operations: searching for objects whose MBR intersects a query rectangle Q, inserting new object, and deleting existing objects.
+
+\subsubsection*{Search}
+Given a rectangle, Q, we can find all data rectangles that are intersected by Q. The search starts from the root node of the tree. For every entry $(mbr, p)$ in a non-leaf node, if $mbr$ intersects Q, the search continues on the node that $p$ points to. When a leaf node is reached, its MBR is tested for intersection with Q. If they intersect, the entries of the node are returned. \todo{Rephrase}
+
+\subsubsection*{Insertion}
+Insertions in an R-tree are handled similarly to insertions in a \bplus. The R-tree is traversed to locate an appropriate leaf to insert the new entry. At each step, the rectangles in the current node are examined, and a candidate is chosen using a heuristic such as choosing the rectangle which requires least enlargement. The search descends into the tree until a leaf node is found.
+The entry is inserted in the found leaf and, then all nodes within the path from the root to that leaf are updated accordingly. If the leaf cannot accommodate the new entry because it is full, then it is split into two nodes.\todo{Rephrase} In case of a split, the redistribution of the leaf entries is done following a heuristic which impacts the performance of the tree. The objective of the split algorithm is to minimize the probability of invoking both created nodes for the same query. Three different split algorithms have been proposed by Guttman: linear split, quadratic split and exponential split. Each algorithm trades efficiency of the splitting for time-complexity. The quadratic split is considered a good compromise between the quality of the split and the time-complexity of the algorithm.
+
+\subsection*{Deletion}
+In order to delete an entry from the R-tree, the search algorithm is used to find the entry and it is removed from the containing node. If the node does not underflow after the deletion, its parent nodes will be updated and the algorithm finishes. If an underflow takes place, the node in which the deletion took place is dissolved and its entries are reinserted.
+
+\subsection{\rplus}
+\subsection{Hilbert curve and compact Hilbert index}
+\subsection{Hilbert R-Tree algorithm}
+
+\section{Hilbert R-tree implementation}
+\label{hrtree}
+
+\section{Benchmark implementation}
+\label{benchmark}
+
+\section{Conclusions and future work}
+
+\newpage
+\bibliography{bibliography}
+
+\newpage
+
+\end{document}
