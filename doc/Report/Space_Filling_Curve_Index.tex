@@ -1,0 +1,90 @@
+\documentclass[11pt, a4paper, oneside]{article}
+\usepackage[a4paper,top=3cm,bottom=3cm,left=3cm,right=3cm]{geometry}
+\usepackage{cite}
+\usepackage[show]{ed}
+\renewcommand{\familydefault}{\sfdefault}
+\usepackage{helvet}
+\usepackage{url}
+\usepackage{parskip}		%% blank lines between paragraphs, no indent
+\usepackage[pdftex]{graphicx}	%% include graphics, preferrably pdf
+\usepackage{wrapfig}
+\usepackage{xspace}
+\usepackage[pdftex]{hyperref}	%% many PDF options can be set here
+\usepackage{float} %%Use to put figures at an exact spot
+\pdfadjustspacing=1		%% force LaTeX-like character spacing
+\bibliographystyle{unsrt}
+\newcommand{\myname}{Alexandru Valentin Toader}
+\newcommand{\mytitle}{Space Filling Curve Index}
+\newcommand{\latex}{\LaTeX\xspace}
+\newcommand{\tex}{\TeX\xspace}
+\newcommand{\mytodo}[1]{\emph{{\color{red} #1 \\}}}
+\usepackage{nameref}
+\usepackage{verbatim}
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage{graphicx}
+
+
+\hypersetup{
+  pdfauthor = {\myname},
+  pdftitle = {\mytitle},
+  pdfkeywords = {},
+  colorlinks = {false}
+}
+
+\begin{document}
+
+  \pagenumbering{roman}
+
+  \thispagestyle{empty}
+
+  \begin{flushright}
+   \includegraphics[scale=0.7]{bsc-logo}
+  \end{flushright}
+  \vspace{20mm}
+  \begin{center}
+    \huge
+    \textbf{\mytitle}
+  \end{center}
+  \vspace*{4mm}
+  \begin{center}
+   \Large by
+  \end{center}
+  \vspace*{4mm}
+  \begin{center}
+    \Large
+    \textbf{\myname}
+  \end{center}
+  \vspace*{20mm}
+  \begin{center}
+    \large
+    Big Data Project
+  \end{center}
+  \vfill
+  \vspace*{8mm}
+  \begin{flushleft}
+    \large
+    Date of Submission: \today \\
+    \rule{\textwidth}{1pt}
+  \end{flushleft}
+  \begin{center}
+    \Large Jacobs University --- School of Engineering and Science
+  \end{center}
+
+  \newpage
+
+
+\newpage
+\tableofcontents
+
+\clearpage
+\pagenumbering{arabic}
+
+\section{Introduction}
+
+\newpage
+\bibliography{bibliography}
+
+\newpage
+
+\end{document}
