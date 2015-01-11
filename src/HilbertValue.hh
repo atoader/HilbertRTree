@@ -20,7 +20,7 @@ public:
     /**
      * @brief HilbertValue Compute the Hilbert value from the coordinates
      * @param coordinates Coordinates from which we want to compute the hilbert value
-     * @param ms Array of precision values, one per dimension
+     * @param ms Array of precision values, one per dimension @see Compact Hilbert Index
      */
     HilbertValue(const std::vector<boost::uint64_t>& coordinates, const std::vector<boost::int32_t>& ms);
 

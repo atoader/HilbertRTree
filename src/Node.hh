@@ -21,19 +21,28 @@
 #include "NonLeafEntry.hh"
 #include "LeafEntry.hh"
 
-struct Node
+class Node
 {
-    /**
-     * @brief Node Initialize a new instance of the Node class
-     * which can hold at most \i{capacity} items before overflowing
-     * and at least \i{capacity/2} items before underflowing
-     *
-     * @param capacity
-     */
-    Node(boost::uint32_t capacity);
+public:
 
+    /**
+     * @brief Node Initialize a new instance of the Node class.
+     * Each node can hold at least m <= M/2 and at most M entries(if it is not the root)
+     * @param m
+     * @param M
+     */
+    Node(boost::uint32_t m, boost::uint32_t M);
+
+    /**
+     * @brief isOverflowing
+     * @return TRUE if there are M entries in this node, FALSE otherwise
+     */
     bool isOverflowing();
 
+    /**
+     * @brief isUnderflowing
+     * @return TRUE if there are less than m entries in this node.
+     */
     bool isUnderflowing();
 
     Node *getPrevSibling() const;
@@ -48,8 +57,18 @@ struct Node
     bool isLeaf() const;
     void setLeaf(bool value);
 
+    /**
+     * @brief getLHV Get the largest Hilbert Value of the subtree rooted in this node.
+     * A shared_ptr containing NULL is returned if this node does not have any children
+     * @return
+     */
     boost::shared_ptr<HilbertValue> getLHV();
 
+    /**
+     * @brief getMBR Get the minimum bounding rectangle for the subtree rooted in this node
+     * A shared_ptr containing NULL is returned if this node does not have any children
+     * @return
+     */
     boost::shared_ptr<Rectangle> getMBR();
 
     /**
@@ -66,8 +85,31 @@ struct Node
      */
     void insertNonLeafEntry(const boost::shared_ptr<NonLeafEntry>& entry);
 
+    /**
+     * @brief removeEntry Remove the leaf entry that has a MBR equal to the one
+     * passed in as a parameter
+     * @param rect
+     */
+    void removeLeafEntry(const boost::shared_ptr<Rectangle>& rect);
+
+    /**
+     * @brief removeNonLeafEntry Remove the non-leaf entry that has a ptr to the node
+     * passed in as parameter
+     * @param child
+     */
+    void removeNonLeafEntry(Node* child);
+
+    /**
+     * @brief adjustMBR Adjust the value of the MBR
+     * of this node depending on the value of the entries
+     * If this node is empty, the value of the MBR should be NULL.
+     */
     void adjustMBR();
 
+    /**
+     * @brief adjustLHV Adjust the value of the MBR of this node.
+     * If this node is empty, the value of the LHV will be NULL.
+     */
     void adjustLHV();
 
     /**
@@ -80,10 +122,16 @@ struct Node
 
     const EntryMultiSet& getEntries() const;
 
+    /**
+     * @brief resetEntriesSet Remove all the entries of this node.
+     */
     void resetEntriesSet();
 
 private:
-    boost::uint32_t capacity;
+    //These values can be factored out, but they are great for testing.
+    boost::uint32_t m;
+    boost::uint32_t M;
+
     boost::shared_ptr<Rectangle> mbr;
     boost::shared_ptr<HilbertValue> lhv;
     EntryMultiSet entries;

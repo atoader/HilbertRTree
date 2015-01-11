@@ -15,9 +15,10 @@
 
 typedef std::multiset<boost::shared_ptr<NodeEntry>, Common::nodeEntryComparisonObj>::iterator EntryIterator;
 
-Node::Node(boost::uint32_t capacity)
+Node::Node(boost::uint32_t m, boost::uint32_t M)
 {
-    this->capacity = capacity;
+    this->m=m;
+    this->M=M;
 
     this->leaf = false;
     this->nextSibling = NULL;
@@ -27,12 +28,12 @@ Node::Node(boost::uint32_t capacity)
 
 bool Node::isOverflowing()
 {
-    return this->entries.size() == this->capacity;
+    return this->entries.size() == this->M;
 }
 
 bool Node::isUnderflowing()
 {
-    return (this->entries.size()) < (this->capacity / 2);
+    return this->entries.size() <= this->m;
 }
 
 Node *Node::getPrevSibling() const
@@ -44,6 +45,7 @@ void Node::setPrevSibling(Node *value)
 {
     prevSibling = value;
 }
+
 Node *Node::getNextSibling() const
 {
     return nextSibling;
@@ -53,6 +55,7 @@ void Node::setNextSibling(Node *value)
 {
     nextSibling = value;
 }
+
 Node *Node::getParent() const
 {
     return parent;
@@ -62,6 +65,7 @@ void Node::setParent(Node *value)
 {
     parent = value;
 }
+
 bool Node::isLeaf() const
 {
     return leaf;
@@ -148,6 +152,7 @@ void Node::insertNonLeafEntry(const boost::shared_ptr<NonLeafEntry> &entry)
         assert(entry->getNode()->leaf == prevSib->leaf);
     }
 
+    //Set the next sibling of the entry
     aux = this->entries.end();
     aux--;
 
@@ -175,52 +180,98 @@ void Node::insertNonLeafEntry(const boost::shared_ptr<NonLeafEntry> &entry)
     }
 }
 
+void Node::removeLeafEntry(const boost::shared_ptr<Rectangle> &rect)
+{
+    if(!this->leaf)
+    {
+        throw std::runtime_error("Cannot remove entry from nonleaf node.");
+    }
+
+    for(EntryIterator it = this->entries.begin(); it!=this->entries.end(); ++it)
+    {
+        if( *rect==*(*it)->getMBR())
+        {
+            this->entries.erase(it);
+            break;
+        }
+    }
+}
+
+void Node::removeNonLeafEntry(Node *child)
+{
+    if(this->leaf)
+    {
+        throw std::runtime_error("Cannot remove entry from leaf node.");
+    }
+
+    for(EntryIterator it = this->entries.begin(); it!=this->entries.end(); ++it)
+    {
+        if(boost::dynamic_pointer_cast<NonLeafEntry>(*it)->getNode()==child)
+        {
+            this->entries.erase(it);
+            break;
+        }
+    }
+}
+
 
 void Node::adjustMBR()
 {
-    assert(this->entries.size() > 0);
     EntryIterator it = this->entries.begin();
 
-    std::vector<boost::uint64_t> lower = (*it)->getMBR()->getLower();
-    std::vector<boost::uint64_t> upper = (*it)->getMBR()->getUpper();
-    ++it;
-
-    for(; it!=this->entries.end(); ++it)
+    if(it!=this->entries.end())
     {
-        const std::vector<boost::uint64_t>& low = (*it)->getMBR()->getLower();
-        const std::vector<boost::uint64_t>& up = (*it)->getMBR()->getUpper();
+        std::vector<boost::uint64_t> lower = (*it)->getMBR()->getLower();
+        std::vector<boost::uint64_t> upper = (*it)->getMBR()->getUpper();
+        ++it;
 
-        for (size_t i = 0; i < low.size(); ++i)
+        for(; it!=this->entries.end(); ++it)
         {
-            if (lower[i] > low[i])
-            {
-                lower[i] = low[i];
-            }
+            const std::vector<boost::uint64_t>& low = (*it)->getMBR()->getLower();
+            const std::vector<boost::uint64_t>& up = (*it)->getMBR()->getUpper();
 
-            if (upper[i] < up[i])
+            for (size_t i = 0; i < low.size(); ++i)
             {
-                upper[i] = up[i];
+                if (lower[i] > low[i])
+                {
+                    lower[i] = low[i];
+                }
+
+                if (upper[i] < up[i])
+                {
+                    upper[i] = up[i];
+                }
             }
         }
-    }
 
-    this->mbr.reset(new Rectangle(lower, upper));
+        this->mbr.reset(new Rectangle(lower, upper));
+    }
+    else
+    {
+        this->mbr.reset();
+    }
 }
 
 void Node::adjustLHV()
 {
-    assert(this->entries.size() > 0);
     EntryIterator it = this->entries.begin();
 
-    this->lhv = (*it)->getLHV();
-    ++it;
-
-    for(; it!=this->entries.end(); ++it)
+    if(it!=this->entries.end())
     {
-        if( (*(this->getLHV().get())) < (*((*it)->getLHV().get())))
+        this->lhv = (*it)->getLHV();
+        ++it;
+
+        for(; it!=this->entries.end(); ++it)
         {
-            this->lhv = (*it)->getLHV();
+            if( (*(this->getLHV().get())) < (*((*it)->getLHV().get())))
+            {
+                this->lhv = (*it)->getLHV();
+            }
         }
+    }
+    else
+    {
+        this->lhv.reset();
     }
 }
 
@@ -234,24 +285,16 @@ std::list<Node *> Node::getSiblings(boost::uint32_t siblingsNo)
     //The node is already part of the list of cooperating siblings
     result.push_back(this);
 
-    while (result.size() < siblingsNo)
+    while(result.size() < siblingsNo && left!=NULL)
     {
-        if(left!=NULL )
-        {
-            result.push_front(left);
-            left = left->prevSibling;
-        }
+        result.push_front(left);
+        left = left->prevSibling;
+    }
 
-        if(right!=NULL && result.size() < siblingsNo)
-        {
-            result.push_back(right);
-            right=right->nextSibling;
-        }
-
-        if(right==NULL && left == NULL)
-        {
-            break;
-        }
+    while(result.size() < siblingsNo && right!=NULL)
+    {
+        result.push_back(right);
+        right=right->nextSibling;
     }
 
     return result;

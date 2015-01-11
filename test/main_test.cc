@@ -36,6 +36,6 @@ int main(int argc, char **argv)
 //    easyloggingpp::Loggers::reconfigureAllLoggers(defaultConf);
 
     testing::InitGoogleTest(&argc, argv);
-  
+
     return RUN_ALL_TESTS();
 }

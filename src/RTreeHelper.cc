@@ -71,6 +71,39 @@ std::list<boost::shared_ptr<NodeEntry> > RTreeHelper::search(Node *subtreeRoot, 
     return result;
 }
 
+Node *RTreeHelper::exactSearch(Node *subtreeRoot, boost::shared_ptr<Rectangle> rect)
+{
+    const EntryMultiSet & entries =  subtreeRoot->getEntries();
+    EntryMultiSet::iterator it;
+
+    const Rectangle& q= *rect.get();
+
+    //There are no duplicates in the tree
+    if(subtreeRoot->isLeaf())
+    {
+        for(it =entries.begin(); it!=entries.end(); ++it)
+        {
+            const Rectangle& r = *(*it)->getMBR().get();
+            if( q==r)
+            {
+                return subtreeRoot;
+            }
+        }
+    }
+    else
+    {
+        for(it = entries.begin(); it!=entries.end(); ++it)
+        {
+            if((*it)->getMBR()->contains(q))
+            {
+                return exactSearch(boost::dynamic_pointer_cast<NonLeafEntry>(*it)->getNode(), rect);
+            }
+        }
+    }
+
+    return NULL;
+}
+
 void RTreeHelper::redistributeEntries(EntryMultiSet &entries, std::list<Node *> siblings)
 {
     unsigned long batchSize = std::min(MAX_NODE_ENTRIES, entries.size()/siblings.size()+1);
@@ -158,6 +191,45 @@ Node *RTreeHelper::handleOverflow(Node *target, const boost::shared_ptr<NodeEntr
     }
 
     return newNode;
+}
+
+Node* RTreeHelper::handleUnderflow(Node *target, std::list<Node *> &out_siblings)
+{
+    //List of entries from the cooperating nodes
+    EntryMultiSet entries;
+
+    Node* removed = NULL;
+
+    out_siblings = target->getSiblings(SIBLINGS_NO+1);
+
+    for(std::list<Node*>::iterator it = out_siblings.begin(); it!=out_siblings.end(); ++it)
+    {
+        entries.insert((*it)->getEntries().begin(), (*it)->getEntries().end());
+    }
+
+    //The nodes are underflowing
+    if(entries.size() < out_siblings.size()*MAX_NODE_ENTRIES/2)
+    {
+        removed = out_siblings.front();
+        Node* prevSib = removed->getPrevSibling();
+        Node* nextSib = removed->getNextSibling();
+
+        if(prevSib!=NULL)
+        {
+            prevSib->setNextSibling(nextSib);
+        }
+
+        if(nextSib!=NULL)
+        {
+            nextSib->setPrevSibling(prevSib);
+        }
+
+        out_siblings.pop_front();
+    }
+
+    RTreeHelper::redistributeEntries(entries, out_siblings);
+
+    return removed;
 }
 
 Node *RTreeHelper::adjustTree(Node* root,Node *N, Node *NN, std::list<Node*>siblings)

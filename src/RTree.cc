@@ -63,6 +63,64 @@ void RTree::insert(const boost::shared_ptr<Rectangle> &rect)
 
     this->root = RTreeHelper::adjustTree(this->root,L, NN, out_siblings);
 }
+
+void RTree::remove(const boost::shared_ptr<Rectangle> &rect)
+{
+    Node* node = RTreeHelper::exactSearch(this->root, rect);
+    std::list<Node*> siblings;
+    bool ok=true;
+
+    if(node!=NULL)
+    {
+        if(node->removeEntry(rect))
+        {
+            node->adjustLHV();
+            node->adjustMBR();
+
+            while(ok)
+            {
+                if(node->isUnderflowing())
+                {
+                    Node* removed = RTreeHelper::handleUnderflow(node, siblings);
+                    if(removed!=NULL)
+                    {
+                        Node* pr = removed->getParent();
+                        if(pr!=NULL)
+                        {
+                            pr->removeEntry(removed);
+                            node=pr;
+                        }
+                        else
+                        {
+                            ok=false;
+                        }
+                    }
+                    else
+                    {
+                        ok=false;
+                    }
+
+                    std::set<Node*> s;
+                    std::set<Node*> p;
+                    s.insert(siblings.begin(), siblings.end());
+
+                    for(std::set<Node*>::iterator it=s.begin(); it!=s.end(); ++it)
+                    {
+                        p.insert((*it)->getParent());
+                    }
+
+
+                    for(std::set<Node*>::iterator it=p.begin(); it!=p.end(); ++it)
+                    {
+                        (*it)->adjustLHV();
+                        (*it)->adjustMBR();
+                    }
+                }
+            }
+        }
+    }
+}
+
 Node *RTree::getRoot() const
 {
     return root;

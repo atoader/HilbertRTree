@@ -28,6 +28,15 @@ public:
     static std::list<boost::shared_ptr<NodeEntry> > search(Node* subtreeRoot, const boost::shared_ptr<Rectangle>& rect);
 
     /**
+     * @brief exactSearch Perform an exact search for the leaf node containing an exact
+     * match for the rectangle. If no leaf is found, NULL is returned.
+     * @param subtreeRoot
+     * @param rect
+     * @return
+     */
+    static Node* exactSearch(Node* subtreeRoot, boost::shared_ptr<Rectangle> rect);
+
+    /**
      * @brief redistributeEntries Redistribute the given set of NodeEntries which are assumed to be sorted
      * according to their hilbert value over the given list of nodes which are assumed to be in the correct
      * sibling order i.e. the next node in the list is also the next sibling of the previous node in the list.
@@ -45,6 +54,7 @@ public:
      */
     static Node* handleOverflow(Node* target, const boost::shared_ptr<NodeEntry>& entry, std::list<Node*>& out_siblings);
 
+    static Node* handleUnderflow(Node* target, std::list<Node*>& out_siblings);
     /**
      * @brief adjustTree Adjust the tree following an insertion or a deletion.
      * @param root The current root of the tree.

@@ -10,10 +10,22 @@ public:
 
     virtual ~LeafEntry();
 
+    /**
+     * @brief getLHV
+     * @return the Hilbert value of the current entry
+     */
     virtual boost::shared_ptr<HilbertValue> getLHV();
 
+    /**
+     * @brief getMBR
+     * @return the Minimum bounding rectangle of the current entry
+     */
     virtual boost::shared_ptr<Rectangle> getMBR();
 
+    /**
+     * @brief isLeafEntry
+     * @return FALSE
+     */
     virtual bool isLeafEntry();
 
 private:
@@ -21,4 +33,4 @@ private:
     boost::shared_ptr<HilbertValue> lhv;
 };
 
-#endif // LEAFENTRY_HH
+#endif // HRTREE_SRC_LEAFENTRY_HH

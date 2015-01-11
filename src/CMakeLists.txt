@@ -1,5 +1,4 @@
-add_library(hrtree Constants.hh Common.cc HilbertValue.cc Rectangle.cc
-NodeEntry.cc LeafEntry.cc NonLeafEntry.cc Node.cc RTreeHelper.cc RTree.cc)
+add_library(hrtree Common.cc Rectangle.cc HilbertValue.cc NodeEntry.cc LeafEntry.cc NonLeafEntry.cc Node.cc)
 target_include_directories (hrtree PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(main main.cc)

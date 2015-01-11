@@ -40,6 +40,8 @@ public:
      */
     void insert(const boost::shared_ptr<Rectangle>& rect);
 
+    void remove(const boost::shared_ptr<Rectangle>& rect);
+
     Node *getRoot() const;
 
 private:

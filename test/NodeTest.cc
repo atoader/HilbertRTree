@@ -10,7 +10,7 @@
 
 TEST(NodeTest, Constructor)
 {
-    Node n(MAX_NODE_ENTRIES);
+    Node n(2,4);
 
     //Asserting defaults
     ASSERT_FALSE(n.isLeaf());
@@ -32,11 +32,11 @@ TEST(NodeTest, insertLeafEntry)
     boost::shared_ptr<HilbertValue> h1(new HilbertValue(rect->getCenter()));
 
     boost::shared_ptr<LeafEntry> leafEntry1( new LeafEntry(rect1, h1));
-    Node leafNode(2);
+    Node leafNode(1,2);
     //The node becomes a leaf node
     leafNode.setLeaf(true);
 
-    Node nonLeafNode(2);
+    Node nonLeafNode(1,2);
     //This will throw an exception because the node is not a leaf node
     ASSERT_ANY_THROW(nonLeafNode.insertLeafEntry(leafEntry));
 
@@ -59,10 +59,10 @@ TEST(NodeTest, insertNonLeafEntry)
     boost::shared_ptr<HilbertValue> h(new HilbertValue(rect->getCenter()));
 
 
-    Node* firstNode = new Node(MAX_NODE_ENTRIES);
-    Node* secondNode = new Node(MAX_NODE_ENTRIES);
-    Node* nonLeafNode = new Node(MAX_NODE_ENTRIES);
-    Node leafNode(MAX_NODE_ENTRIES);
+    Node* firstNode = new Node(2,4);
+    Node* secondNode = new Node(2,4);
+    Node* nonLeafNode = new Node(2,4);
+    Node leafNode(2,4);
 
     boost::shared_ptr<NonLeafEntry>  nonLeafEntry( new NonLeafEntry(firstNode));
     boost::shared_ptr<NonLeafEntry>  secondNonLeafEntry( new NonLeafEntry(secondNode));
@@ -87,7 +87,7 @@ TEST(NodeTest, insertNonLeafEntry)
 ////inserted node
 TEST(NodeTest, insertNonLeafEntrySiblings_1)
 {
-    Node* childNode = new Node(MAX_NODE_ENTRIES);
+    Node* childNode = new Node(2,4);
     childNode->setLeaf(true);
     std::vector<boost::uint64_t> lower(2, 2);
     std::vector<boost::uint64_t> upper(2, 4);
@@ -98,7 +98,7 @@ TEST(NodeTest, insertNonLeafEntrySiblings_1)
 
     boost::shared_ptr<NonLeafEntry>  nonLeafEntry( new NonLeafEntry(childNode));
     //No siblings
-    Node* parent = new Node(MAX_NODE_ENTRIES);
+    Node* parent = new Node(2,4);
     parent->insertNonLeafEntry(nonLeafEntry);
 
     ASSERT_EQ(parent, childNode->getParent());
@@ -111,7 +111,7 @@ TEST(NodeTest, insertNonLeafEntrySiblings_1)
 
 TEST(NodeTest, insertNonLeafEntrySiblings_2)
 {
-    Node* childNode = new Node(MAX_NODE_ENTRIES);
+    Node* childNode = new Node(2,4);
     childNode->setLeaf(true);
     std::vector<boost::uint64_t> lower(2, 2);
     std::vector<boost::uint64_t> upper(2, 4);
@@ -121,7 +121,7 @@ TEST(NodeTest, insertNonLeafEntrySiblings_2)
     childNode->insertLeafEntry(leafEntry);
     boost::shared_ptr<NonLeafEntry>  nonLeafEntry( new NonLeafEntry(childNode));
 
-    Node* childNode1 = new Node(MAX_NODE_ENTRIES);
+    Node* childNode1 = new Node(2,4);
     childNode1->setLeaf(true);
     std::vector<boost::uint64_t> lower1(2, 3);
     std::vector<boost::uint64_t> upper1(2, 10);
@@ -132,8 +132,8 @@ TEST(NodeTest, insertNonLeafEntrySiblings_2)
     boost::shared_ptr<NonLeafEntry>  nonLeafEntry1( new NonLeafEntry(childNode1));
 
     //No siblings
-    Node* parent = new Node(MAX_NODE_ENTRIES);
-    Node* parentLeft = new Node(MAX_NODE_ENTRIES);
+    Node* parent = new Node(2,4);
+    Node* parentLeft = new Node(2,4);
     parent->setPrevSibling(parentLeft);
     parentLeft->setNextSibling(parent);
 
@@ -154,7 +154,7 @@ TEST(NodeTest, insertNonLeafEntrySiblings_2)
 
 TEST(NodeTest, insertNonLeafEntrySiblings_3)
 {
-    Node* childNode = new Node(MAX_NODE_ENTRIES);
+    Node* childNode = new Node(2,4);
     childNode->setLeaf(true);
     std::vector<boost::uint64_t> lower(2, 2);
     std::vector<boost::uint64_t> upper(2, 4);
@@ -164,7 +164,7 @@ TEST(NodeTest, insertNonLeafEntrySiblings_3)
     childNode->insertLeafEntry(leafEntry);
     boost::shared_ptr<NonLeafEntry>  nonLeafEntry( new NonLeafEntry(childNode));
 
-    Node* childNode1 = new Node(MAX_NODE_ENTRIES);
+    Node* childNode1 = new Node(2,4);
     childNode1->setLeaf(true);
     std::vector<boost::uint64_t> lower1(2, 3);
     std::vector<boost::uint64_t> upper1(2, 10);
@@ -175,8 +175,8 @@ TEST(NodeTest, insertNonLeafEntrySiblings_3)
     boost::shared_ptr<NonLeafEntry>  nonLeafEntry1( new NonLeafEntry(childNode1));
 
     //No siblings
-    Node* parent = new Node(MAX_NODE_ENTRIES);
-    Node* parentLeft = new Node(MAX_NODE_ENTRIES);
+    Node* parent = new Node(2,4);
+    Node* parentLeft = new Node(2,4);
     parent->setNextSibling(parentLeft);
     parentLeft->setPrevSibling(parent);
 
@@ -199,7 +199,7 @@ TEST(NodeTest, insertNonLeafEntrySiblings_3)
 
 TEST(NodeTest, insertNonLeafEntrySiblings_4)
 {
-    Node* childNode = new Node(MAX_NODE_ENTRIES);
+    Node* childNode = new Node(2,4);
     childNode->setLeaf(true);
     std::vector<boost::uint64_t> lower(2, 2);
     std::vector<boost::uint64_t> upper(2, 4);
@@ -209,7 +209,7 @@ TEST(NodeTest, insertNonLeafEntrySiblings_4)
     childNode->insertLeafEntry(leafEntry);
     boost::shared_ptr<NonLeafEntry>  nonLeafEntry( new NonLeafEntry(childNode));
 
-    Node* childNode1 = new Node(MAX_NODE_ENTRIES);
+    Node* childNode1 = new Node(2,4);
     childNode1->setLeaf(true);
     std::vector<boost::uint64_t> lower1(2, 3);
     std::vector<boost::uint64_t> upper1(2, 10);
@@ -219,7 +219,7 @@ TEST(NodeTest, insertNonLeafEntrySiblings_4)
     childNode1->insertLeafEntry(leafEntry1);
     boost::shared_ptr<NonLeafEntry>  nonLeafEntry1( new NonLeafEntry(childNode1));
 
-    Node* childNode2 = new Node(MAX_NODE_ENTRIES);
+    Node* childNode2 = new Node(2,4);
     childNode2->setLeaf(true);
     std::vector<boost::uint64_t> lower2(2, 3);
     std::vector<boost::uint64_t> upper2(2, 10);
@@ -230,9 +230,9 @@ TEST(NodeTest, insertNonLeafEntrySiblings_4)
     boost::shared_ptr<NonLeafEntry>  nonLeafEntry2( new NonLeafEntry(childNode2));
 
     //No siblings
-    Node* parent = new Node(MAX_NODE_ENTRIES);
-    Node* parentLeft = new Node(MAX_NODE_ENTRIES);
-    Node* parentRight = new Node(MAX_NODE_ENTRIES);
+    Node* parent = new Node(2,4);
+    Node* parentLeft = new Node(2,4);
+    Node* parentRight = new Node(2,4);
     parent->setPrevSibling(parentLeft);
     parentLeft->setNextSibling(parent);
 
@@ -337,7 +337,7 @@ TEST(NodeTest, isOverflowing)
     boost::shared_ptr<LeafEntry> leafEntry( new LeafEntry(rect,h));
     boost::shared_ptr<LeafEntry> leafEntry1( new LeafEntry(rect, h));
 
-    Node n(2);
+    Node n(1,2);
     n.setLeaf(true);
 
     ASSERT_FALSE(n.isOverflowing());
@@ -357,11 +357,12 @@ TEST(NodeTest, isUnderflowing)
 
     boost::shared_ptr<LeafEntry> leafEntry( new LeafEntry(rect,h));
 
-    Node n(2);
+    Node n(1,2);
     n.setLeaf(true);
 
     ASSERT_TRUE(n.isUnderflowing());
 
+    n.insertLeafEntry(leafEntry);
     n.insertLeafEntry(leafEntry);
 
     ASSERT_FALSE(n.isUnderflowing());
@@ -387,7 +388,7 @@ TEST(NodeTest, adjustMBR)
     boost::shared_ptr<HilbertValue> h3(new HilbertValue(rect3->getCenter()));
     boost::shared_ptr<LeafEntry> leafEntry3(new LeafEntry(rect3, h3));
 
-    Node n(4);
+    Node n(2,4);
     n.setLeaf(true);
     n.insertLeafEntry(leafEntry1);
     n.insertLeafEntry(leafEntry2);
@@ -402,7 +403,7 @@ TEST(NodeTest, adjustMBR)
     ASSERT_EQ(5,r->getUpper()[0]);
     ASSERT_EQ(5,r->getUpper()[1]);
 
-    Node n1(4);
+    Node n1(2,4);
     n1.setLeaf(true);
     n1.insertLeafEntry(leafEntry1);
     n1.insertLeafEntry(leafEntry3);
@@ -432,7 +433,7 @@ TEST(NodeTest, adjustMBR_1)
     boost::shared_ptr<HilbertValue> h2(new HilbertValue(rect2->getCenter()));
     boost::shared_ptr<LeafEntry> leafEntry2(new LeafEntry(rect2, h2));
 
-    Node n(4);
+    Node n(2,4);
     n.setLeaf(true);
     n.insertLeafEntry(leafEntry1);
     n.insertLeafEntry(leafEntry2);
@@ -451,37 +452,37 @@ TEST(NodeTest, adjustMBR_1)
 TEST(NodeTest, adjustLHV)
 {
     std::vector<boost::uint64_t> lower1(2, 0);
-    std::vector<boost::uint64_t> upper1(2, 4);
+    std::vector<boost::uint64_t> upper1(2, 0);
     boost::shared_ptr<Rectangle> rect1(new Rectangle(lower1, upper1));
     boost::shared_ptr<HilbertValue> h1(new HilbertValue(rect1->getCenter()));
     boost::shared_ptr<LeafEntry> leafEntry1(new LeafEntry(rect1, h1));
 
-    std::vector<boost::uint64_t> lower2(2, 1);
-    std::vector<boost::uint64_t> upper2(2, 5);
+    std::vector<boost::uint64_t> lower2(2, 0);
+    std::vector<boost::uint64_t> upper2(2, 2);
     boost::shared_ptr<Rectangle> rect2(new Rectangle(lower2, upper2));
     boost::shared_ptr<HilbertValue> h2(new HilbertValue(rect2->getCenter()));
     boost::shared_ptr<LeafEntry> leafEntry2(new LeafEntry(rect2, h2));
 
-    Node n(4);
+    Node n(2,4);
     n.setLeaf(true);
     n.insertLeafEntry(leafEntry1);
     n.insertLeafEntry(leafEntry2);
 
     ASSERT_NO_FATAL_FAILURE(n.adjustLHV());
 
-    ASSERT_TRUE((*h1.get())<(*h2.get()));
-    ASSERT_TRUE((*h2.get())== (*n.getLHV().get()));
+    ASSERT_TRUE(*h1 < *h2);
+    ASSERT_TRUE(*h2 == *(n.getLHV()));
 }
 
 TEST(NodeTest, getSiblings)
 {
-    Node* right =new Node(MAX_NODE_ENTRIES);
+    Node* right =new Node(2,4);
     right->setLeaf(true);
 
-    Node* left =new Node(MAX_NODE_ENTRIES);
+    Node* left =new Node(2,4);
     left->setLeaf(true);
 
-    Node* main =new Node(MAX_NODE_ENTRIES);
+    Node* main =new Node(2,4);
     main->setLeaf(true);
 
     ASSERT_EQ(1, main->getSiblings(2).size());

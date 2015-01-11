@@ -18,10 +18,22 @@ class NodeEntry
 public:
     virtual ~NodeEntry();
 
+    /**
+     * @brief getLHV Get the largest hilbert value of this entry
+     * @return
+     */
     virtual boost::shared_ptr<HilbertValue> getLHV()=0;
 
+    /**
+     * @brief getMBR Get the minimum bounding rectangle of this entry
+     * @return
+     */
     virtual boost::shared_ptr<Rectangle> getMBR()=0;
 
+    /**
+     * @brief isLeafEntry Returns true if this is a leaf entry
+     * @return
+     */
     virtual bool isLeafEntry()=0;
 };
 
