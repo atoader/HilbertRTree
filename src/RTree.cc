@@ -61,63 +61,30 @@ void RTree::insert(const boost::shared_ptr<Rectangle> &rect)
         NN =  RTreeHelper::handleOverflow(L, newEntry, out_siblings);
     }
 
-    this->root = RTreeHelper::adjustTree(this->root,L, NN, out_siblings);
+    this->root = RTreeHelper::adjustTreeForInsert(this->root,L, NN, out_siblings);
 }
 
 void RTree::remove(const boost::shared_ptr<Rectangle> &rect)
 {
-    Node* node = RTreeHelper::exactSearch(this->root, rect);
-    std::list<Node*> siblings;
-    bool ok=true;
+    std::list<Node*> out_siblings;
 
-    if(node!=NULL)
+    //Find the node containing the entry
+    Node* L = RTreeHelper::exactSearch(this->root, rect);
+    Node* DL = NULL;
+
+    //If there was a match
+    if(L!=NULL)
     {
-        if(node->removeEntry(rect))
+        //Remove the entry from the node
+        L->removeLeafEntry(rect);
+
+        if(L->isUnderflowing())
         {
-            node->adjustLHV();
-            node->adjustMBR();
-
-            while(ok)
-            {
-                if(node->isUnderflowing())
-                {
-                    Node* removed = RTreeHelper::handleUnderflow(node, siblings);
-                    if(removed!=NULL)
-                    {
-                        Node* pr = removed->getParent();
-                        if(pr!=NULL)
-                        {
-                            pr->removeEntry(removed);
-                            node=pr;
-                        }
-                        else
-                        {
-                            ok=false;
-                        }
-                    }
-                    else
-                    {
-                        ok=false;
-                    }
-
-                    std::set<Node*> s;
-                    std::set<Node*> p;
-                    s.insert(siblings.begin(), siblings.end());
-
-                    for(std::set<Node*>::iterator it=s.begin(); it!=s.end(); ++it)
-                    {
-                        p.insert((*it)->getParent());
-                    }
-
-
-                    for(std::set<Node*>::iterator it=p.begin(); it!=p.end(); ++it)
-                    {
-                        (*it)->adjustLHV();
-                        (*it)->adjustMBR();
-                    }
-                }
-            }
+            //DL is the node that was deleted, NULL if no node was deleted
+            DL=RTreeHelper::handleUnderflow(L, out_siblings);
         }
+
+        RTreeHelper::adjustTreeForRemove(L, DL, out_siblings);
     }
 }
 

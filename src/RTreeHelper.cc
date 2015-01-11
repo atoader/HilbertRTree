@@ -163,7 +163,7 @@ Node *RTreeHelper::handleOverflow(Node *target, const boost::shared_ptr<NodeEntr
     if (entries.size() > out_siblings.size() * MAX_NODE_ENTRIES)
     {
         //The new node is a sibling of the target.
-        newNode = new Node(MAX_NODE_ENTRIES);
+        newNode = new Node(MIN_NODE_ENTRIES, MAX_NODE_ENTRIES);
 
         newNode->setLeaf(entry->isLeafEntry());
 
@@ -207,8 +207,8 @@ Node* RTreeHelper::handleUnderflow(Node *target, std::list<Node *> &out_siblings
         entries.insert((*it)->getEntries().begin(), (*it)->getEntries().end());
     }
 
-    //The nodes are underflowing
-    if(entries.size() < out_siblings.size()*MAX_NODE_ENTRIES/2)
+    //The nodes are underflowing and our node is not the root
+    if(entries.size() < out_siblings.size()*MAX_NODE_ENTRIES/2 && target->getParent()!=NULL)
     {
         removed = out_siblings.front();
         Node* prevSib = removed->getPrevSibling();
@@ -232,7 +232,7 @@ Node* RTreeHelper::handleUnderflow(Node *target, std::list<Node *> &out_siblings
     return removed;
 }
 
-Node *RTreeHelper::adjustTree(Node* root,Node *N, Node *NN, std::list<Node*>siblings)
+Node *RTreeHelper::adjustTreeForInsert(Node* root,Node *N, Node *NN, std::list<Node*>siblings)
 {
     //Node that is created if the parent needs to be split
     Node* PP = NULL;
@@ -268,7 +268,7 @@ Node *RTreeHelper::adjustTree(Node* root,Node *N, Node *NN, std::list<Node*>sibl
                 shared_ptr<NonLeafEntry> n(new NonLeafEntry(N));
                 shared_ptr<NonLeafEntry> nn(new NonLeafEntry(NN));
 
-                newRoot = new Node(MAX_NODE_ENTRIES);
+                newRoot = new Node(MIN_NODE_ENTRIES,MAX_NODE_ENTRIES);
                 newRoot->insertNonLeafEntry(n);
                 newRoot->insertNonLeafEntry(nn);
             }
@@ -321,6 +321,64 @@ Node *RTreeHelper::adjustTree(Node* root,Node *N, Node *NN, std::list<Node*>sibl
     newRoot->adjustMBR();
 
     return newRoot;
+}
+
+void RTreeHelper::adjustTreeForRemove(Node *N, Node *DN, std::list<Node *> siblings)
+{
+    //This list will hold the sibling nodes that
+    //have to handle an underflow at the parent level
+    std::list<Node*> newSiblings;
+
+    std::set<Node*> S;
+    S.insert(siblings.begin(), siblings.end());
+    //Set of parent nodes of the sibling nodes
+    std::set<Node*> P;
+
+    bool keepRunning =true;
+
+    while(keepRunning)
+    {
+        Node* Np = N->getParent();
+        Node* DPParent = NULL;
+
+        if(Np== NULL)
+        {
+            keepRunning = false;
+        }
+        else
+        {
+            if(DN!=NULL)
+            {
+                Node* DNParent = DN->getParent();
+                DNParent->removeNonLeafEntry(DN);
+
+                if(DNParent->isUnderflowing())
+                {
+                    DPParent =RTreeHelper::handleUnderflow(DNParent,newSiblings);
+                }
+            }
+
+            for (std::set<Node*>::iterator node = S.begin(); node != S.end();
+                    ++node)
+            {
+                P.insert((*node)->getParent());
+            }
+
+            for (std::set<Node*>::iterator node = P.begin(); node != P.end();
+                    ++node)
+            {
+                (*node)->adjustLHV();
+                (*node)->adjustMBR();
+            }
+
+            N = Np;
+            DN =  DPParent;
+            S.clear();
+            P.clear();
+            S.insert(newSiblings.begin(), newSiblings.end());
+        }
+
+    }
 }
 
 void RTreeHelper::debug(Node *root)
