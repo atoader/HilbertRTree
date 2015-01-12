@@ -1,6 +1,6 @@
 find_package (Threads)
 
-add_executable(main_test main_test.cc RectangleTest.cc HilbertValueTest.cc NodeTest.cc)
+add_executable(main_test main_test.cc RectangleTest.cc HilbertValueTest.cc NodeTest.cc RTreeTest.cc)
 
 target_link_libraries (main_test LINK_PUBLIC hrtree)
 target_link_libraries (main_test LINK_PUBLIC gtest)

@@ -18,7 +18,7 @@
 
 RTree::RTree()
 {
-    this->root = new Node(MAX_NODE_ENTRIES);
+    this->root = new Node(MIN_NODE_ENTRIES, MAX_NODE_ENTRIES);
     this->root->setLeaf(true);
 }
 
@@ -54,6 +54,7 @@ void RTree::insert(const boost::shared_ptr<Rectangle> &rect)
         //If there is room in the leaf, insert the entry
         L->insertLeafEntry(newEntry);
         out_siblings.push_back(L);
+
     }
     else
     {
