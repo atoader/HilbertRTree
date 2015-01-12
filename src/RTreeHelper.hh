@@ -11,6 +11,16 @@
 class RTreeHelper
 {
 public:
+
+    /**
+     * @brief search Search the subtree rooted at the given node and return all the leaf entries
+     * in the subtree that intersect the query rectangle.
+     * @param subtreeRoot Root of the subtree
+     * @param query Query rectangle
+     * @return A list of leaf entries whose mbrs intersect the query rectangle
+     */
+    static std::list<boost::shared_ptr<NodeEntry> > search(Node* subtreeRoot, const boost::shared_ptr<Rectangle>& query);
+
     /**
      * @brief chooseLeaf Choose a leaf for the hilbert value starting from the node N
      * @param N Node to start the search from
@@ -18,14 +28,6 @@ public:
      * @return Pointer to a leaf node in which the given hilbert value can be inserted.
      */
     static Node* chooseLeaf(Node* N, const boost::shared_ptr<HilbertValue>& h);
-
-    /**
-     * @brief search
-     * @param subtreeRoot
-     * @param rect
-     * @return
-     */
-    static std::list<boost::shared_ptr<NodeEntry> > search(Node* subtreeRoot, const boost::shared_ptr<Rectangle>& rect);
 
     /**
      * @brief exactSearch Perform an exact search for the leaf node containing an exact
@@ -40,6 +42,8 @@ public:
      * @brief redistributeEntries Redistribute the given set of NodeEntries which are assumed to be sorted
      * according to their hilbert value over the given list of nodes which are assumed to be in the correct
      * sibling order i.e. the next node in the list is also the next sibling of the previous node in the list.
+     * Each node in the siblings list must not have any entries.
+     * N and NN have their LHV and MBR adjusted as well as all the nodes in the siblings list;
      * @param entries
      * @param siblings
      */

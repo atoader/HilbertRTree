@@ -12,24 +12,23 @@ TEST(RTreeTest, Constructor)
     delete tree;
 }
 
-TEST(RTreeTest, DISABLED_insert)
+TEST(RTreeTest, insert)
 {
     RTree tree;
-    int nodeNo = 19;
+    int nodeNo = 13;
 
     for(int i=0; i<nodeNo; i++)
     {
         std::vector<boost::uint64_t> lower(2, i);
         std::vector<boost::uint64_t> upper(2, i);
         boost::shared_ptr<Rectangle> rect(new Rectangle(lower, upper));
-        if(i==18)
+        if(i==nodeNo-1)
         {
             int a=2;
         }
         tree.insert(rect);
-    }
 
-    RTreeHelper::debug(tree.getRoot());
+    }
 
     std::vector<boost::uint64_t> lower(2, 0);
     std::vector<boost::uint64_t> upper(2, nodeNo);
@@ -106,7 +105,7 @@ TEST(RTreeTest, remove_3)
         tree.insert(rect);
     }
 
-    for(int i=0; i<2; i++)
+    for(int i=0; i<MAX_NODE_ENTRIES - MIN_NODE_ENTRIES; i++)
     {
         std::vector<boost::uint64_t> lower(2, i);
         std::vector<boost::uint64_t> upper(2, i);
@@ -114,8 +113,10 @@ TEST(RTreeTest, remove_3)
         tree.remove(rect);
     }
 
+    RTreeHelper::debug(tree.getRoot());
+
     ASSERT_TRUE(tree.getRoot()->isLeaf());
-    ASSERT_EQ(MAX_NODE_ENTRIES-1, tree.getRoot()->getEntries().size());
+    ASSERT_EQ(MIN_NODE_ENTRIES+1, tree.getRoot()->getEntries().size());
 }
 
 TEST(RTreeTest, remove_4)

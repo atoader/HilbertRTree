@@ -27,9 +27,9 @@ RTree::~RTree()
     delete this->root;
 }
 
-std::list<boost::shared_ptr<NodeEntry> > RTree::search(const boost::shared_ptr<Rectangle> &rect)
+std::list<boost::shared_ptr<NodeEntry> > RTree::search(const boost::shared_ptr<Rectangle> &query)
 {
-    return RTreeHelper::search(this->root, rect);
+    return RTreeHelper::search(this->root, query);
 }
 
 void RTree::insert(const boost::shared_ptr<Rectangle> &rect)
@@ -37,6 +37,10 @@ void RTree::insert(const boost::shared_ptr<Rectangle> &rect)
     //Compute the hilbert value of the center of the rectangle
     boost::shared_ptr<HilbertValue> h(new HilbertValue(rect->getCenter()));
 
+    //List which contains:
+    //1. The leaf into which the new entry was inserted
+    //2. The siblings of the leaf node (if an overflow happened)
+    //3. The newly created node(if one was created)
     std::list<Node*> out_siblings;
 
     //Create a new entry to insert
@@ -48,21 +52,23 @@ void RTree::insert(const boost::shared_ptr<Rectangle> &rect)
     //Find a leaf into which we can insert this value
     Node* L = RTreeHelper::chooseLeaf(this->root, h);
 
-    //if the leaf is full
+    //if the leaf is not full, we can simply insert the value in this node
     if(!L->isOverflowing())
     {
-        //If there is room in the leaf, insert the entry
         L->insertLeafEntry(newEntry);
+        //After insertion, we must adjust the LHV and the MBR
+        L->adjustLHV();
+        L->adjustMBR();
+        //The siblings list will only contain L.
         out_siblings.push_back(L);
-
     }
     else
     {
-        //Handle the overflow of the new node.
+        //Handle the overflow of the node
         NN =  RTreeHelper::handleOverflow(L, newEntry, out_siblings);
     }
 
-    this->root = RTreeHelper::adjustTreeForInsert(this->root,L, NN, out_siblings);
+    this->root = RTreeHelper::adjustTreeForInsert(this->root, L, NN, out_siblings);
 }
 
 void RTree::remove(const boost::shared_ptr<Rectangle> &rect)

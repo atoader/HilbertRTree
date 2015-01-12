@@ -25,18 +25,22 @@ public:
     virtual ~RTree();
 
     /**
-     * @brief search Search the R-tree for a entries that are intersected by the
+     * @brief search Search the R-tree for entries that are intersected by the
      * given rectangle.
-     * @param rect
+     * This is just a sample implementation of the search method that only retrieves the
+     * list of nodes entries instead of a list of data items.
+     * In a real implementation, this method would return a list of data objects
+     * @param query
      * @return A list of NodeEntry items that contain rectangles that are intersected
      * by the query rectangle
      */
-    std::list<boost::shared_ptr<NodeEntry> >  search(const boost::shared_ptr<Rectangle>& rect);
+    std::list<boost::shared_ptr<NodeEntry> >  search(const boost::shared_ptr<Rectangle>& query);
 
     /**
      * @brief insert Insert a new data item with the given bounding box into the tree.
+     * In this implementation, only the rectangle is inserted, but in a real implementation,
+     * additional data (pointer to disk page etc) should be inserted.
      * @param rect The bounding box to insert
-     * @param data The data item to insert. The RTree becomes the owner of this item.
      */
     void insert(const boost::shared_ptr<Rectangle>& rect);
 

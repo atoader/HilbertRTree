@@ -502,8 +502,7 @@ TEST(NodeTest, getSiblings)
     std::list<Node *> siblings = main->getSiblings(3);
     std::list<Node *>::iterator it = siblings.begin();
 
-    ASSERT_TRUE(*it == left);
-    ++it;
+
     ASSERT_TRUE(*it == main);
     ++it;
     ASSERT_TRUE(*it == right);

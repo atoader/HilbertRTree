@@ -129,54 +129,59 @@ void Node::insertNonLeafEntry(const boost::shared_ptr<NonLeafEntry> &entry)
 
     //If the element was inserted in the beginning, we have to search for the sibling
     //in the previous node
-    if(it==this->entries.begin())
+    if(!entry->getNode()->getPrevSibling())
     {
-        if(this->prevSibling!=NULL && this->prevSibling->entries.size()>0)
+        if(it==this->entries.begin())
         {
-            EntryIterator prevIt = this->prevSibling->entries.end();
+            if(this->prevSibling!=NULL && this->prevSibling->entries.size()>0)
+            {
+                EntryIterator prevIt = this->prevSibling->entries.end();
+                prevIt--;
+                prevSib = boost::dynamic_pointer_cast<NonLeafEntry>(*prevIt)->getNode();
+            }
+        }
+        else
+        {
+            EntryIterator prevIt =it;
             prevIt--;
             prevSib = boost::dynamic_pointer_cast<NonLeafEntry>(*prevIt)->getNode();
         }
-    }
-    else
-    {
-        EntryIterator prevIt =it;
-        prevIt--;
-        prevSib = boost::dynamic_pointer_cast<NonLeafEntry>(*prevIt)->getNode();
-    }
-
-    entry->getNode()->prevSibling = prevSib;
-    if(prevSib!=NULL)
-    {
-        prevSib->nextSibling = boost::dynamic_pointer_cast<NonLeafEntry>(entry)->getNode();
-        assert(entry->getNode()->leaf == prevSib->leaf);
-    }
-
-    //Set the next sibling of the entry
-    aux = this->entries.end();
-    aux--;
-
-    if(it==aux)
-    {
-        //The inserted element is the last in the list
-        //try to find a sibling in the list of the sibling node.
-        if(this->nextSibling!=NULL && this->nextSibling->entries.size()>0)
+        entry->getNode()->prevSibling = prevSib;
+        if(prevSib!=NULL)
         {
-            nextSib = boost::dynamic_pointer_cast<NonLeafEntry>(*this->nextSibling->entries.begin())->getNode();
+            prevSib->nextSibling = boost::dynamic_pointer_cast<NonLeafEntry>(entry)->getNode();
+            assert(entry->getNode()->leaf == prevSib->leaf);
         }
     }
-    else
-    {
-        EntryIterator nextIt  = it;
-        nextIt++;
-        nextSib = boost::dynamic_pointer_cast<NonLeafEntry>(*nextIt)->getNode();
-    }
 
-    entry->getNode()->nextSibling = nextSib;
-    if(nextSib!=NULL)
+    if(!entry->getNode()->getNextSibling())
     {
-        nextSib->prevSibling = boost::dynamic_pointer_cast<NonLeafEntry>(entry)->getNode();
-        assert(entry->getNode()->leaf == nextSib->leaf);
+        //Set the next sibling of the entry
+        aux = this->entries.end();
+        aux--;
+
+        if(it==aux)
+        {
+            //The inserted element is the last in the list
+            //try to find a sibling in the list of the sibling node.
+            if(this->nextSibling!=NULL && this->nextSibling->entries.size()>0)
+            {
+                nextSib = boost::dynamic_pointer_cast<NonLeafEntry>(*this->nextSibling->entries.begin())->getNode();
+            }
+        }
+        else
+        {
+            EntryIterator nextIt  = it;
+            nextIt++;
+            nextSib = boost::dynamic_pointer_cast<NonLeafEntry>(*nextIt)->getNode();
+        }
+
+        entry->getNode()->nextSibling = nextSib;
+        if(nextSib!=NULL)
+        {
+            nextSib->prevSibling = boost::dynamic_pointer_cast<NonLeafEntry>(entry)->getNode();
+            assert(entry->getNode()->leaf == nextSib->leaf);
+        }
     }
 }
 
@@ -285,11 +290,11 @@ std::list<Node *> Node::getSiblings(boost::uint32_t siblingsNo)
     //The node is already part of the list of cooperating siblings
     result.push_back(this);
 
-    while(result.size() < siblingsNo && left!=NULL)
-    {
-        result.push_front(left);
-        left = left->prevSibling;
-    }
+//    while(result.size() < siblingsNo && left!=NULL)
+//    {
+//        result.push_front(left);
+//        left = left->prevSibling;
+//    }
 
     while(result.size() < siblingsNo && right!=NULL)
     {
@@ -308,4 +313,7 @@ const EntryMultiSet &Node::getEntries() const
 void Node::resetEntriesSet()
 {
     this->entries.clear();
+
+    this->lhv.reset();
+    this->mbr.reset();
 }
