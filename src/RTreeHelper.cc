@@ -9,8 +9,6 @@
 
 using boost::shared_ptr;
 
-int RTreeHelper::counter = 0;
-
 std::list<boost::shared_ptr<NodeEntry> > RTreeHelper::search(Node *subtreeRoot, const boost::shared_ptr<Rectangle> &query)
 {
     std::list<boost::shared_ptr<NodeEntry> > result;
@@ -80,15 +78,12 @@ Node *RTreeHelper::exactSearch(Node *subtreeRoot, boost::shared_ptr<Rectangle> r
     const EntryMultiSet & entries =  subtreeRoot->getEntries();
     EntryMultiSet::iterator it;
 
-    const Rectangle& q= *rect.get();
-
     //There are no duplicates in the tree
     if(subtreeRoot->isLeaf())
     {
         for(it =entries.begin(); it!=entries.end(); ++it)
         {
-            const Rectangle& r = *(*it)->getMBR().get();
-            if( q==r)
+            if( *rect ==*((*it)->getMBR()))
             {
                 return subtreeRoot;
             }
@@ -98,7 +93,7 @@ Node *RTreeHelper::exactSearch(Node *subtreeRoot, boost::shared_ptr<Rectangle> r
     {
         for(it = entries.begin(); it!=entries.end(); ++it)
         {
-            if((*it)->getMBR()->contains(q))
+            if((*it)->getMBR()->contains(*rect))
             {
                 return exactSearch(boost::dynamic_pointer_cast<NonLeafEntry>(*it)->getNode(), rect);
             }
@@ -221,9 +216,10 @@ Node* RTreeHelper::handleUnderflow(Node *target, std::list<Node *> &out_siblings
 {
     //List of entries from the cooperating nodes
     EntryMultiSet entries;
-
+    //Pointer to the deleted node if any
     Node* removed = NULL;
 
+    //This will contain the target node and at most SIBLINGS_NO of its siblings
     out_siblings = target->getSiblings(SIBLINGS_NO+1);
 
     for(std::list<Node*>::iterator it = out_siblings.begin(); it!=out_siblings.end(); ++it)
@@ -365,6 +361,7 @@ void RTreeHelper::adjustTreeForRemove(Node *N, Node *DN, std::list<Node *> sibli
 
     std::set<Node*> S;
     S.insert(siblings.begin(), siblings.end());
+
     //Set of parent nodes of the sibling nodes
     std::set<Node*> P;
 
@@ -372,7 +369,11 @@ void RTreeHelper::adjustTreeForRemove(Node *N, Node *DN, std::list<Node *> sibli
 
     while(keepRunning)
     {
+        //Parent of the node affected by the deletion
         Node* Np = N->getParent();
+
+        //Node in the parent level that had to be removed due to the
+        //propagation of an underflow.
         Node* DPParent = NULL;
 
         if(Np== NULL)
@@ -385,49 +386,59 @@ void RTreeHelper::adjustTreeForRemove(Node *N, Node *DN, std::list<Node *> sibli
                 Node* mainEntry = boost::dynamic_pointer_cast<NonLeafEntry>(*N->getEntries().begin())->getNode();
                 if(mainEntry->isLeaf())
                 {
+                    //The root will become a leaf.
                     N->setLeaf(true);
+
+                    //Copy the entries for redistribution
                     EntryMultiSet data = mainEntry->getEntries();
+
+                    //Reset the entries contained in this set.
                     N->resetEntriesSet();
 
                     for(EntryMultiSet::iterator it = data.begin(); it!=data.end(); ++it)
                     {
-                        boost::shared_ptr<LeafEntry> e =boost::dynamic_pointer_cast<LeafEntry>(*it);
-                        N->insertLeafEntry(e);
+                        N->insertLeafEntry(boost::dynamic_pointer_cast<LeafEntry>(*it));
                     }
                 }
                 else
                 {
+                    //If the node under the root is not a leaf, redistribute the entries
                     EntryMultiSet data = mainEntry->getEntries();
                     N->resetEntriesSet();
 
                     for(EntryMultiSet::iterator it = data.begin(); it!=data.end(); ++it)
                     {
-                        boost::shared_ptr<NonLeafEntry> e =boost::dynamic_pointer_cast<NonLeafEntry>(*it);
-                        N->insertNonLeafEntry(e);
+                        N->insertNonLeafEntry(boost::dynamic_pointer_cast<NonLeafEntry>(*it));
                     }
                 }
             }
 
+            //Adjust the values of the root.
             N->adjustLHV();
             N->adjustMBR();
         }
         else
         {
+            //If there was a node deleted, we must update its parent and remove its entry
             if(DN!=NULL)
             {
+                //Remove the node's entry from its parent
                 Node* DNParent = DN->getParent();
                 DNParent->removeNonLeafEntry(DN);
 
+                //If the parent node is underflowing, handle it
                 if(DNParent->isUnderflowing())
                 {
                     DPParent =RTreeHelper::handleUnderflow(DNParent,newSiblings);
                 }
                 else
                 {
+                    //otherwise add the DNParent to the list of nodes that must be updated
                     newSiblings.push_back(DNParent);
                 }
             }
 
+            //The parent of the node is always affected by the removal
             newSiblings.push_back(Np);
 
             for (std::set<Node*>::iterator node = S.begin(); node != S.end();
@@ -445,73 +456,10 @@ void RTreeHelper::adjustTreeForRemove(Node *N, Node *DN, std::list<Node *> sibli
 
             N = Np;
             DN =  DPParent;
+
             S.clear();
             P.clear();
             S.insert(newSiblings.begin(), newSiblings.end());
         }
-
     }
 }
-
-void RTreeHelper::debug(Node *root)
-{
-    std::ofstream of("graph.txt");
-
-    of<<"digraph g { \n forcelabels=true;\n";
-    of<<RTreeHelper::listNodes(root, of);
-    of<<RTreeHelper::listNodeLinks(root, of);
-    of<<"}"<<std::endl;
-
-    of.close();
-}
-
-
-std::string RTreeHelper::listNodeLinks(Node* node, std::ofstream& ofs)
-{
-    std::stringstream ss;
-
-    ss<<(boost::uint64_t)node << " -> "<<(boost::uint64_t)node->getNextSibling()<<"[ label=\"sibling\" color=\"red:blue\" ];\n";
-    ss<<(boost::uint64_t)node->getPrevSibling()<< " -> "<<(boost::uint64_t)node <<"[ label=\"sibling\" color=\"green:blue\"];\n";
-
-    for(EntryMultiSet::iterator it = node->getEntries().begin(); it!=node->getEntries().end(); ++it)
-    {
-        if(!(*it)->isLeafEntry())
-        {
-            ss<<(boost::uint64_t)node << " -> "<<(boost::uint64_t)(boost::dynamic_pointer_cast<NonLeafEntry>(*it)->getNode())<<";\n";
-            ss<<RTreeHelper::listNodeLinks(boost::dynamic_pointer_cast<NonLeafEntry>(*it)->getNode(), ofs);
-        }
-        else
-        {
-            ss<<(boost::uint64_t)node << " -> "<<(boost::uint64_t)(boost::uint64_t)(*it).get()<<";\n";
-        }
-    }
-
-    return ss.str();
-}
-
-std::string RTreeHelper::listNodes(Node* node, std::ofstream& ofs)
-{
-    std::stringstream ss;
-
-    boost::shared_ptr<Rectangle> mbr = node->getMBR();
-    if(!!mbr)
-    {
-        ss<<(boost::uint64_t)node<<" [label=\""<<mbr->getLower()[0]<<","<<mbr->getLower()[1]<<"\n"<<mbr->getUpper()[0]<<","<<mbr->getUpper()[1]<<"\"];\n";
-    }
-
-
-    for(EntryMultiSet::iterator it = node->getEntries().begin(); it!=node->getEntries().end(); ++it)
-    {
-        if(!(*it)->isLeafEntry())
-        {
-            ss<<RTreeHelper::listNodes(boost::dynamic_pointer_cast<NonLeafEntry>(*it)->getNode(), ofs);
-        }
-        else
-        {
-            ss<<(boost::uint64_t)(*it).get()<<" [label=\""<<(*it)->getMBR()->getLower()[0]<<","<<(*it)->getMBR()->getLower()[1]<<"\n"<<(*it)->getMBR()->getUpper()[0]<<","<<(*it)->getMBR()->getUpper()[1]<<"\"];\n";
-        }
-    }
-
-    return ss.str();
-}
-

@@ -113,8 +113,6 @@ TEST(RTreeTest, remove_3)
         tree.remove(rect);
     }
 
-    RTreeHelper::debug(tree.getRoot());
-
     ASSERT_TRUE(tree.getRoot()->isLeaf());
     ASSERT_EQ(MIN_NODE_ENTRIES+1, tree.getRoot()->getEntries().size());
 }
