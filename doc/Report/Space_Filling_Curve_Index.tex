@@ -26,6 +26,7 @@
 \usepackage{amsfonts}
 \usepackage{amsmath}
 \usepackage{graphicx}
+\usepackage{gensymb}
 
 
 \hypersetup{
@@ -84,83 +85,179 @@
 \pagenumbering{arabic}
 
 \section{Introduction}
-%Talk about spatial databases
-An array database is a database that is optimized to store and query array(raster) data. Often, arrays are used to represent sensor, simulation, image or statistics data. Rasters can easily become n-dimensional terabyte objects and offering scalable, flexible storage, and flexible manipulation on them is one of the main qualities of array database management systems(DBMS). 
+%1. Array database intro
+%2. 
 
-There are many applications that benefit from efficient processing of array data such as: location-based services and geographic services.\todo{Add some more examples} These applications pose high requirements concerning the data and the operations that need to be supported, and therefore new techniques and tools are needed for increased processing efficiency.
+Array database management system(DBMS) offer scalable, flexible storage, and fast manipulation of n-dimensional homogeneous collections of items (array/raster data). Often, arrays are used to represent sensor, simulation, image or statistics data. 
 
-One of the main issues that arise when working with high dimensional, terabyte objects is how to store them in the underlying system while maintaining a high-performance level. Due to their size, array objects need to be divided into sub-arrays that can be easily managed by the underlying storage provider. In order to attain this, a system for indexing and retrieving fragments of n-dimensional objects must be provided.
+There are many applications that benefit from efficient processing of array data such as: remote sensing, geology, oceanography, business data and gene data. These applications pose high requirements concerning the data and the operations that need to be supported, and therefore new techniques and tools are needed for increased processing efficiency.
 
-Rasdaman is the leading array DMBS and has been used in applications involving data ranging from 1-D measurement data to 4-D ocean and climate data. The rasdaman system partitions raster objects into tiles\cite{DBLP:conf/icde/FurtadoB99} which are indexed using a \rplus based mechanism. The individual tiles can be considered n-dimensional spatial objects (rectangles). This project was focused on researching the possibility of further improving the indexing mechanism of the rasdaman system.
+One of the main issues that arise when working with high dimensional, terabyte objects is how to store them in the underlying system while maintaining a high-performance level. Due to their size, raster objects need to be divided into sub-arrays that can be easily managed by the underlying storage provider. In order to attain this, a system for indexing and retrieving fragments of n-dimensional objects must be provided.
 
-The purpose of this project was to design and implement an indexing mechanism for multidimensional data objects using the Hilbert R-Tree as the underlying data structure. 
+Rasdaman is the leading array DMBS and has been used in applications involving data ranging from 1-D measurements to 4-D ocean and climate data. The rasdaman system partitions raster objects into tiles\cite{DBLP:conf/icde/FurtadoB99} which are indexed using a mechanism based on the \rplus. The individual tiles can be considered n-dimensional spatial objects (rectangles). 
 
-The B+ tree\todo{Cite the paper of B+ trees} has found wide adoption in the field of relational databases and represents the standard data structure for database index development. The task of storing, indexing and querying n-dimensional data is not well supported by indexes based on the B+ tree. 
+The purpose of this project was to design and implement an indexing mechanism for multidimensional data objects using the Hilbert R-Tree as the underlying data structure.
 
-The R-tree, proposed by Antonin Guttman\todo{Add cite}, is the preferred method for indexing spatial data. The key idea is to group objects using their minimum bounding rectangle(MBR). Objects are added to a MBR within the index that will lead to the smallest increase in its size. The performance of R-trees depends on the quality of the algorithm that clusters the data rectangles on a node. 
+The B+ tree\cite{Comer:1979:UB:356770.356776} has found wide adoption in the field of relational databases and represents the standard data structure for database index development. The task of storing, indexing and querying n-dimensional data is not well supported by indexes based on the B+ tree. 
+
+The R-tree, proposed by Antonin Guttman\cite{Guttman:1984:RDI:602259.602266}, is the preferred method for indexing spatial data. The key idea is to group objects using their minimum bounding rectangle(MBR). Objects are added to a MBR within the node that will lead to the smallest increase in its size. The performance of R-trees depends on the quality of the algorithm that clusters the data rectangles on a node.
 
 Rasdaman currently uses an implementation based on the \rplus. The \rplus is a compromise between R-trees and kd-trees: they avoid overlapping of internal nodes by inserting an object into multiple leaves if necessary. The \rplus offers increased point query performance over the original R-tree at the cost of a higher space utilization. 
 
-The original R-tree, proposed by Guttman, is the basis of a number of variations and improvements.\todo{Reference the book}. The R* tree is considered the most robust variant, and has found numerous applications, in both research and commercial systems.\todo{Rephrase} However, the empirical study in \todo{Add reference to 105} has shown that the Hilbert R-Tree can perform better than the other variants in some cases.
+The original R-tree, proposed by Guttman, is the basis of a number of variations and improvements\cite{Manolopoulos:2005:RTA:1098699}. The \rstar is considered the most robust variant, and has found numerous applications, in both research and commercial systems. However, the empirical study performed in \cite{Kamel:1994:HRI:645920.673001} has shown that the Hilbert R-Tree can perform better than the other variants in some cases.
 
-Hilbert R-trees use the Hilbert space-filling curve\todo{cite Hilbert curve} to impose a linear ordering on the data rectangles with the goal of obtaining an improved clustering of the spatial objects.
+Hilbert R-trees use the Hilbert space-filling curve to impose a linear ordering on the data rectangles with the goal of obtaining an improved clustering of the spatial objects.
 
 To the extent of my knowledge, there is no open-source C++ implementation of the Hilbert R-tree data structure and providing one will be of great value to the community.
 
 The initial specification for the project outlined the following objectives:
 \begin{itemize}
 \item Implement the Hilbert R-tree data structure
-\item Create a benchmark to test the performance of the indexing mechanism of the rasdaman system
-\item Integrate the Hilbert R-tree data structure into rasdaman database system.
+\item Create a benchmark to compare the performance of the indexing mechanism of the rasdaman system with a new Hilbert R-tree based implementation
+\item Integrate the Hilbert R-tree data structure into the rasdaman database system.
 \end{itemize}
 
 The first two tasks have been successfully completed, while the third and last task has been left for future research.
-The remainder of this document is structured as follows: section \ref{sec:related} discusses the theoretical foundations and algorithms necessary for the implementation of the Hilbert R-tree, section \ref{hrtree} describes in detail the technical details of the Hilbert R-tree implementation, followed by a technical description of the benchmark procedure in section \ref{sec:benchmark}.
+
+The remainder of this document is structured as follows: section \ref{sec:related} discusses the theoretical foundations and algorithms necessary for the implementation of the Hilbert R-tree while also shortly describing the original R-tree implementation and the \rplus based implementation used in rasdaman, section \ref{sec:hrtree} describes in detail the technical details of the Hilbert R-tree implementation, followed by a technical description of the benchmark procedure in section \ref{sec:benchmark}.
+
 The report ends with a discussion of the results and future work.
 
 \section{Related work}
 \label{sec:related}
 
-In this section, I give an overview of the theoretical foundations of the Hilbert R-tree and the current \rplus based implementation used in rasdaman.
+In this section, I will first describe the original R-tree proposed by Guttman, as it lays the foundation for the \rplus data structure used in rasdaman and the Hilbert R-tree that is the subject of this project,followed by a short description of the \rplus variant of the R-tree used in rasdaman, a presentation of the Hilbert curve and, finally, a description of the Hilbert R-tree algorithm.
 
 \subsection{R-tree}
-The R-tree data structure has been developed by Antonin Guttmann \todo{cite} and is a hierarchical data structure based on \bplus. They are used for the dynamic organization of a set of n-dimensional geometric objects represented by the n-dimensional minimum bounding rectangle. Each node of the R-tree corresponds to the MBR that bounds its children. Each non-leaf node contains, in addition to the MBR of its children, pointers to children nodes. The leaves of the tree contain pointer to the database objects instead of pointers to children nodes.\todo{Rephrase}
+The R-tree data structure was developed by Antonin Guttmann\cite{Guttman:1984:RDI:602259.602266} and is a hierarchical data structure based on the \bplus. It is used for the dynamic organization of a set of n-dimensional geometric objects represented by their n-dimensional minimum bounding rectangle. 
 
-The MBRs of different nodes may overlap each other and MBR can be contained (in the geometrical sense) in many nodes, but it can be associated to only one of them. This means that a query may visit many nodes before confirming the existence of a given MBR.
-
-An R-tree of order (m, M) has the following characteristics:
+An R-tree of order $(m, M)$ has the following characteristics:
 \begin{itemize}
-\item Each leaf node (unless it is the root) can host at most M and at least $m\leq \frac{M}{2}$ entries. Each entry is of the form $(mbr, oid)$, such that $mbr$ is the MBR that spatially contains the object and $oid$ is the object's identifier.
-\item Each non-leaf node can store at most M and at least $m\leq \frac{M}{2}$ entries. Each entry is of the form $(mbr, p)$ where $p$ is a pointer to a child of the node and $mbr$ is the MBR that spatially contains the MBRs contained in this child.
+\item Each leaf node (unless it is the root) can host at most $M$ and at least $m\leq \frac{M}{2}$ entries. Each entry is of the form $(mbr, oid)$, such that $mbr$ is the MBR that spatially contains the object and $oid$ is the object's identifier.
+\item Each non-leaf node can store at most $M$ and at least $m\leq \frac{M}{2}$ entries. Each entry is of the form $(mbr, p)$ where $p$ is a pointer to a child of the node and $mbr$ is the MBR that spatially contains the minimum bounding rectangles contained in this child.
 \item The minimum allowed number of entries in the root node is 2, unless it is a leaf (in this case, it may contain zero or a single entry)
 \item All leaves of the R-tree are at the same level.
 \end{itemize}
 
-The R-tree is a height-balanced tree with a maximum height of $h_{max}=[log_mN]-1$ where $N$ is the number of data rectangles contained. The data structure dynamic i.e. global reorganization is not required to handle insertions or deletions. 
+From the above definition, an R-tree is a height-balanced tree with a maximum height of $h_{max}=[log_mN]-1$ where $N$ is the number of data rectangles contained. The data structure is dynamic i.e. global reorganization is not required to handle insertions or deletions as we will see in the sub-section covering the insertion and deletion algorithms. 
 
-The R-tree supports the following operations: searching for objects whose MBR intersects a query rectangle Q, inserting new object, and deleting existing objects.
+It is worth mentioning that the MBRs of different nodes may overlap each other and a MBR can be contained (in the geometrical sense) in many nodes, but it can be associated to only one of them. This means that a query may visit many nodes before confirming the existence of a given MBR.
+
+Two terms that are important for the performance of an R-tree are \textit{coverage} and \textit{overlap}. The coverage of a level of an R-tree is defined as the total area of all the rectangles associated with the nodes of that level. The overlap of a level of an R-tree is defined as the total area contained within two or more nodes. Efficient R-tree searching demands that both
+overlap and coverage be minimized. Data structures based on the R-tree as the \rplus and the \rstar use methods that improve these two metrics. 
+
+The R-tree supports the following operations: searching for objects whose MBR intersects a query rectangle $Q$, inserting new object, and deleting existing objects.
 
 \subsubsection*{Search}
-Given a rectangle, Q, we can find all data rectangles that are intersected by Q. The search starts from the root node of the tree. For every entry $(mbr, p)$ in a non-leaf node, if $mbr$ intersects Q, the search continues on the node that $p$ points to. When a leaf node is reached, its MBR is tested for intersection with Q. If they intersect, the entries of the node are returned. \todo{Rephrase}
+Given a rectangle, $Q$, we can find all data rectangles that are intersected by this rectangle. The search starts from the root node of the tree. For every entry $(mbr, p)$ in a non-leaf node, if $mbr$ intersects $Q$, the search continues on the node that $p$ points to. When a leaf node is reached, Q is tested for intersection with each MBR of each leaf entry, and the entries that are intersected are returned.
 
 \subsubsection*{Insertion}
-Insertions in an R-tree are handled similarly to insertions in a \bplus. The R-tree is traversed to locate an appropriate leaf to insert the new entry. At each step, the rectangles in the current node are examined, and a candidate is chosen using a heuristic such as choosing the rectangle which requires least enlargement. The search descends into the tree until a leaf node is found.
-The entry is inserted in the found leaf and, then all nodes within the path from the root to that leaf are updated accordingly. If the leaf cannot accommodate the new entry because it is full, then it is split into two nodes.\todo{Rephrase} In case of a split, the redistribution of the leaf entries is done following a heuristic which impacts the performance of the tree. The objective of the split algorithm is to minimize the probability of invoking both created nodes for the same query. Three different split algorithms have been proposed by Guttman: linear split, quadratic split and exponential split. Each algorithm trades efficiency of the splitting for time-complexity. The quadratic split is considered a good compromise between the quality of the split and the time-complexity of the algorithm.
+Insertions in an R-tree are handled similarly to insertions in a \bplus. The R-tree is traversed to locate an appropriate leaf to insert the new entry. At each step, the rectangles in the current node are examined, and a candidate is chosen using a heuristic such as choosing the rectangle which requires the least enlargement. The search descends into the tree until a leaf node is found.
+
+The entry is inserted in the found leaf and, then all nodes on the path from the root to that leaf are updated accordingly. If the leaf cannot accommodate the new entry because it is full, then it is split into two nodes.
+
+In case of a split, the redistribution of the leaf entries is done following a heuristic which impacts the performance of the tree. The objective of the split algorithm is to minimize the probability of invoking both created nodes for the same query. 
+
+Three different split algorithms have been proposed by Guttman: linear split, quadratic split and exponential split. Each algorithm trades efficiency of the split for time-complexity. The quadratic split is considered a good compromise between the quality of the split and the time-complexity of the algorithm.
 
 \subsection*{Deletion}
-In order to delete an entry from the R-tree, the search algorithm is used to find the entry and it is removed from the containing node. If the node does not underflow after the deletion, its parent nodes will be updated and the algorithm finishes. If an underflow takes place, the node in which the deletion took place is dissolved and its entries are reinserted.
+In order to delete an entry from the R-tree, the search algorithm is used to find the entry which is then removed from the containing node. If the node does not underflow after the deletion, its parent nodes will be updated and the algorithm finishes. If an underflow takes place, the node in which the deletion took place is dissolved and its entries are reinserted.
 
 \subsection{\rplus}
-\subsection{Hilbert curve and compact Hilbert index}
-\subsection{Hilbert R-Tree algorithm}
 
+The standard R-Trees dynamic insertion algorithms might lead to a structure that has excessive space overlap and "dead-space" in the nodes which results in bad performance. Efficient R-tree searching demands that both overlap and coverage be minimized. It has been shown, that zero overlap and coverage is only achievable for data points that are known in advance and, that using a packing technique for R-trees, search is dramatically improved\cite{Roussopoulos85directspatial}.
+
+The \rplus \cite{Sellis:1987:RDI:645914.671636} is a variation of Guttman's R-trees that avoids overlapping rectangles in intermediate nodes of the tree by allowing partitions to split rectangles. The paper introducing the data structure shows that the \rplus achieves up to 50\% savings in disk accesses compared to an R-tree when searching files of thousands of rectangles.
+
+The entries of the \rplus are identical to the ones of the original R-Tree with the following extensions\cite{Sellis:1987:RDI:645914.671636}:
+\begin{itemize}
+\item For each entry $(p,mbr)$ in an intermediate node, the subtree rooted at the node pointed to
+by $p$ contains a rectangle $R$ if and only if $R$ is covered by $mbr$. The only exception is when
+$R$ is a rectangle at a leaf node; in that case $R$ must just overlap with $mbr$.
+
+\item For any two entries $(p_1 , mbr_1 )$ and $(p_2, mbr_2)$ of an intermediate node, the overlap between $mbr_1$ and $mbr_2$ is zero.
+
+\end{itemize}
+
+One property satisfied by an R-tree but not by an \rplus is that in the former, every node contains between $M/2$ and $M$ entries unless it is the root. In consequence, the \rplus achieves better search performance at the expense of space utilization. In the case of point queries, the \rplus can achieve  even more than 50\% savings in disk accesses compared to the R-tree. The R-tree suffers in the case of few, large data objects, which force a lot of "forking" during the search while the \rplus handles these cases, by splitting these large data objects into smaller ones.
+
+A full discussion of the \rplus algorithms and a performance comparison to the R-tree is available in \cite{Sellis:1987:RDI:645914.671636}. 
+
+\subsection{Hilbert curve and compact Hilbert index}
+%Describe space filling curves
+A space-filling curve is a parametrized, injective function which maps a unit line segment to a continuous curve in a hypercube, which gets arbitrarily close to a given point in the hypercube as the parameter increases.\cite{MR1299533}. In essence, this means that space filling curves can be used for dimension reduction i.e. by using the inverse of the curve generating function, one can map a multidimensional point to a point on a line.
+
+Space filling curves that are Lebesgue measure-preserving have the additional property that equal length intervals map to equal volumes i.e. objects that are close together in multidimensional space will map to points that are close together in 1-dimensional space.
+
+The Z-order, the Hilbert curve, and the Gray-code curve\cite{Faloutsos:1988:GCP:53064.53065} are examples of space filling curves. In \cite{Faloutsos:1989:FSK:73721.73746}, it was shown experimentally that, given a set of set of n-dimensional rectangles, the Hilbert curve achieves the best clustering among the three above methods i.e. the rectangles that are close together in n-dimensional space will be mapped to points that are close together in 1-dimensional space.
+
+The geometric construction of the Hilbert curve starts with the $\sqcap$ shape as shown in the first image of figure ~\ref{fig:hilbert}. This is known as an order 1 Hilbert curve. Given an order k curve, one can obtain an order k+1 curve as follows:
+\begin{enumerate}
+\item Place a copy of the curve, rotated $90\degree$ counter clock-wise, in the lower right.
+\item Place a copy of the curve, rotated $90\degree$ clockwise, in the lower left.
+\item Place a copy of the curve in the upper right and one in the upper left.
+\item Connect the four disjoint curves.
+\end{enumerate} 
+
+The first six orders of the Hilbert curve can be seen in figure ~\ref{fig:hilbert}.
+
+\begin{figure}[h!]
+  \caption{Hilbert curves of order 1 to 6}
+  \label{fig:hilbert}
+  \centering
+    \includegraphics[width=0.9\textwidth]{img/Hilbert6}
+\end{figure}
+
+When the order of the curve tends to infinity, the resulting curve is a fractal, with a fractal dimension of 2. The Hilbert curve can be generalized for higher dimensions. The path of a space filling curve imposes a linear ordering on the grid points. Figure ~\ref{fig:hilbert-ordering} shows such ordering for an order 2 curve. For example the point (0,0) on the curve has a Hilbert value of 0, while the point (1,1) has a Hilbert value of 2. 
+
+\begin{figure}[h!]
+  \caption{Ordering imposed by the Hilbert curve {\cite{Kamel:1994:HRI:645920.673001}} }
+  \label{fig:hilbert-ordering}
+  \centering
+    \includegraphics[width=0.5\textwidth]{img/HilbertOrdering}
+\end{figure}
+
+%Describe the compact hilbert index
+
+A method for efficiently computing the Hilbert coordinates of a n-dimensional point is described by Hamilton and Rau-Chaplin in \cite{Hamilton:2008:CHI:1330769.1330914}. A C++ library based on this method is offered by Chris Hamilton at \url{https://web.cs.dal.ca/~chamilto/hilbert/}. Using this library I have implemented the Hilbert R-tree data structure described in the following subsection.
+
+\subsection{Hilbert R-Tree}
+A standard R-tree splits a node on overflow, turning 1 node into 2. The Hilbert R-Tree is a data structure, based on the original R-Tree, that offers the possibility of deferred splitting of overflowing nodes. This leads to better space utilization and better search performance.
+
+A Hilbert R-tree of order $(m,M)$ has the following structure. A leaf node contains at least $m$ and at most $M$ entries of the form $(mbr, obj\_id, h)$ where $mbr$ and $obj\_id$ are the same as in the standard R-tree and $h$ is the Hilbert value associated with the center of $mbr$. A non-leaf node contains at least $m$ and at most $M$ entries of the form $(mbr, ptr, LHV)$ where $mbr$ and $ptr$ are the same as in the standard R-tree and $LHV$ is the largest Hilbert value among the data rectangles enclosed by $mbr$.
+
+The Hilbert value of the entries is used to create an ordering on the nodes and leads to the concept of sibling nodes. As discussed in the previous subsection, this ordering groups similar data rectangles together, minimizing the area and the perimeter of the resulting minimum bounding rectangles.
+
+By using the ordering imposed on the nodes of the Hilbert R-tree, instead of splitting a node that overflows into two nodes, we can implement an $s$ to $s+1$ splitting policy. In other words, when a node is overflowing, it tries to push some of its entries to $s-1$ of its siblings. If all the siblings are full, a new node is created and the entries of the $s$ nodes is distributed among the $s+1$ siblings. By adjusting the split policy, space utilization of the tree's nodes can be driven arbitrarily close to 100\%.
+
+I will briefly describe the search, insert and delete procedures while referring the reader to the original paper on the Hilbert R-tree by Kamel and Faloutsos \cite{Kamel:1994:HRI:645920.673001} for a detailed explanation.
+
+\subsubsection*{Search}
+Given a query rectangle $Q$, the search procedure starts from the root and descends the tree examining all nodes that intersect the query rectangle. When the algorithm reaches a leaf, it reports all entries that intersect the query window $Q$ as results.
+
+\subsubsection*{Insertion}
+To insert a new rectangle $r$ in the Hilbert R-tree, the Hilbert value $h$ of the center of the new entry is used as key. 
+
+The algorithm initially descends the tree to find a suitable leaf for the new entry. At each level, the node with the minimum LHV greater than the one of the new entry is chosen. When a leaf node is reached, the rectangle $r$ is inserted in the correct position according to $h$.
+
+If the leaf is about to overflow, the entries are first distributed among the leaf's siblings. If all the $s$ cooperating siblings are about to overflow, a new node is created and the entries of the $s$ cooperating siblings are divided among the $s+1$ nodes. The LHV and MBR of the nodes directly affected by the insert are updated.
+
+Finally, the changes are propagated upwards by adjusting the LHV and MBR of all the affected parent nodes.
+
+\subsection*{Deletion}
+In the Hilbert R-tree orphaned nodes do not need to be reinserted whenever a father node underflows. Instead of reinserting the node, we borrow keys from its cooperating siblings or, if all the siblings are about to underflow, the $s+1$ siblings are merged into $s$ siblings. Finally, the changes are propagated upwards towards the root.
+
+The Hilbert R-tree provides a better space utilization and greater search performance than the other R-tree variants at the cost of a higher insertion cost. In the benchmarks displayed in \cite{Kamel:1994:HRI:645920.673001}, the Hilbert R-tree outperforms the \rstar and the standard R-tree in all tests.
+
+In the next section I will give details about the C++ implementation of the Hilbert R-tree that was done for this project.
 \section{Hilbert R-tree implementation}
-\label{hrtree}
+\label{sec:hrtree}
 
 \section{Benchmark implementation}
-\label{benchmark}
+\label{sec:benchmark}
 
 \section{Conclusions and future work}
+\label{sec:conclusions}
 
 \newpage
 \bibliography{bibliography}
