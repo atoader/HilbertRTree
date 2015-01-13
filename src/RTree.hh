@@ -44,8 +44,16 @@ public:
      */
     void insert(const boost::shared_ptr<Rectangle>& rect);
 
+    /**
+     * @brief remove Remove the entry containing the rectangle from the tree.
+     * @param rect
+     */
     void remove(const boost::shared_ptr<Rectangle>& rect);
 
+    /**
+     * @brief getRoot
+     * @return Pointer to the Node that is the root of the tree.
+     */
     Node *getRoot() const;
 
 private:

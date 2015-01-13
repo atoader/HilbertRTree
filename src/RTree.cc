@@ -73,11 +73,14 @@ void RTree::insert(const boost::shared_ptr<Rectangle> &rect)
 
 void RTree::remove(const boost::shared_ptr<Rectangle> &rect)
 {
+    //Pointer to the leaf node thas is deleted due to an underflow(if any)
+    Node* DL = NULL;
+
+    //List of siblings affected by the removal of an entry
     std::list<Node*> out_siblings;
 
     //Find the node containing the entry
     Node* L = RTreeHelper::exactSearch(this->root, rect);
-    Node* DL = NULL;
 
     //If there was a match
     if(L!=NULL)
@@ -87,7 +90,7 @@ void RTree::remove(const boost::shared_ptr<Rectangle> &rect)
 
         if(L->isUnderflowing())
         {
-            //DL is the node that was deleted, NULL if no node was deleted
+            //DL contains a pointer to the node that was deleted or NULL if no node was deleted
             DL=RTreeHelper::handleUnderflow(L, out_siblings);
         }
 

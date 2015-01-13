@@ -127,61 +127,33 @@ void Node::insertNonLeafEntry(const boost::shared_ptr<NonLeafEntry> &entry)
     Node* nextSib=NULL;
     Node* prevSib=NULL;
 
-    //If the element was inserted in the beginning, we have to search for the sibling
-    //in the previous node
-    if(!entry->getNode()->getPrevSibling())
+
+    if(it!=this->entries.begin())
     {
-        if(it==this->entries.begin())
-        {
-            if(this->prevSibling!=NULL && this->prevSibling->entries.size()>0)
-            {
-                EntryIterator prevIt = this->prevSibling->entries.end();
-                prevIt--;
-                prevSib = boost::dynamic_pointer_cast<NonLeafEntry>(*prevIt)->getNode();
-            }
-        }
-        else
-        {
-            EntryIterator prevIt =it;
-            prevIt--;
-            prevSib = boost::dynamic_pointer_cast<NonLeafEntry>(*prevIt)->getNode();
-        }
-        entry->getNode()->prevSibling = prevSib;
-        if(prevSib!=NULL)
-        {
-            prevSib->nextSibling = boost::dynamic_pointer_cast<NonLeafEntry>(entry)->getNode();
-            assert(entry->getNode()->leaf == prevSib->leaf);
-        }
+        EntryIterator prevIt =it;
+        prevIt--;
+        prevSib = boost::dynamic_pointer_cast<NonLeafEntry>(*prevIt)->getNode();
+    }
+    entry->getNode()->prevSibling = prevSib;
+    if(prevSib!=NULL)
+    {
+        prevSib->nextSibling = boost::dynamic_pointer_cast<NonLeafEntry>(entry)->getNode();
+        assert(entry->getNode()->leaf == prevSib->leaf);
     }
 
-    if(!entry->getNode()->getNextSibling())
+    aux = this->entries.end();
+    aux--;
+    if(it!=aux)
     {
-        //Set the next sibling of the entry
-        aux = this->entries.end();
-        aux--;
-
-        if(it==aux)
-        {
-            //The inserted element is the last in the list
-            //try to find a sibling in the list of the sibling node.
-            if(this->nextSibling!=NULL && this->nextSibling->entries.size()>0)
-            {
-                nextSib = boost::dynamic_pointer_cast<NonLeafEntry>(*this->nextSibling->entries.begin())->getNode();
-            }
-        }
-        else
-        {
-            EntryIterator nextIt  = it;
-            nextIt++;
-            nextSib = boost::dynamic_pointer_cast<NonLeafEntry>(*nextIt)->getNode();
-        }
-
-        entry->getNode()->nextSibling = nextSib;
-        if(nextSib!=NULL)
-        {
-            nextSib->prevSibling = boost::dynamic_pointer_cast<NonLeafEntry>(entry)->getNode();
-            assert(entry->getNode()->leaf == nextSib->leaf);
-        }
+        EntryIterator nextIt  = it;
+        nextIt++;
+        nextSib = boost::dynamic_pointer_cast<NonLeafEntry>(*nextIt)->getNode();
+    }
+    entry->getNode()->nextSibling = nextSib;
+    if(nextSib!=NULL)
+    {
+        nextSib->prevSibling = boost::dynamic_pointer_cast<NonLeafEntry>(entry)->getNode();
+        assert(entry->getNode()->leaf == nextSib->leaf);
     }
 }
 

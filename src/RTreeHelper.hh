@@ -70,6 +70,12 @@ public:
      */
     static Node* adjustTreeForInsert(Node* root, Node*N, Node* NN,std::list<Node*>siblings);
 
+    /**
+     * @brief adjustTreeForRemove Adjust the tree after the removal of an entry.
+     * @param N Node that was the target of the removal
+     * @param DN Node that was deleted if an underflow occured, NULL otherwise
+     * @param siblings List of the siblings affected by the removal.
+     */
     static void adjustTreeForRemove(Node*N, Node* DN, std::list<Node*> siblings);
 
     static void debug(Node* root);
