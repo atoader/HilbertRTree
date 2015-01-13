@@ -9,8 +9,6 @@
 
 using boost::shared_ptr;
 
-int RTreeHelper::counter = 0;
-
 std::list<boost::shared_ptr<NodeEntry> > RTreeHelper::search(Node *subtreeRoot, const boost::shared_ptr<Rectangle> &query)
 {
     std::list<boost::shared_ptr<NodeEntry> > result;
@@ -465,66 +463,3 @@ void RTreeHelper::adjustTreeForRemove(Node *N, Node *DN, std::list<Node *> sibli
         }
     }
 }
-
-void RTreeHelper::debug(Node *root)
-{
-    std::ofstream of("graph.txt");
-
-    of<<"digraph g { \n forcelabels=true;\n";
-    of<<RTreeHelper::listNodes(root, of);
-    of<<RTreeHelper::listNodeLinks(root, of);
-    of<<"}"<<std::endl;
-
-    of.close();
-}
-
-
-std::string RTreeHelper::listNodeLinks(Node* node, std::ofstream& ofs)
-{
-    std::stringstream ss;
-
-    ss<<(boost::uint64_t)node << " -> "<<(boost::uint64_t)node->getNextSibling()<<"[ label=\"sibling\" color=\"red:blue\" ];\n";
-    ss<<(boost::uint64_t)node->getPrevSibling()<< " -> "<<(boost::uint64_t)node <<"[ label=\"sibling\" color=\"green:blue\"];\n";
-
-    for(EntryMultiSet::iterator it = node->getEntries().begin(); it!=node->getEntries().end(); ++it)
-    {
-        if(!(*it)->isLeafEntry())
-        {
-            ss<<(boost::uint64_t)node << " -> "<<(boost::uint64_t)(boost::dynamic_pointer_cast<NonLeafEntry>(*it)->getNode())<<";\n";
-            ss<<RTreeHelper::listNodeLinks(boost::dynamic_pointer_cast<NonLeafEntry>(*it)->getNode(), ofs);
-        }
-        else
-        {
-            ss<<(boost::uint64_t)node << " -> "<<(boost::uint64_t)(boost::uint64_t)(*it).get()<<";\n";
-        }
-    }
-
-    return ss.str();
-}
-
-std::string RTreeHelper::listNodes(Node* node, std::ofstream& ofs)
-{
-    std::stringstream ss;
-
-    boost::shared_ptr<Rectangle> mbr = node->getMBR();
-    if(!!mbr)
-    {
-        ss<<(boost::uint64_t)node<<" [label=\""<<mbr->getLower()[0]<<","<<mbr->getLower()[1]<<"\n"<<mbr->getUpper()[0]<<","<<mbr->getUpper()[1]<<"\"];\n";
-    }
-
-
-    for(EntryMultiSet::iterator it = node->getEntries().begin(); it!=node->getEntries().end(); ++it)
-    {
-        if(!(*it)->isLeafEntry())
-        {
-            ss<<RTreeHelper::listNodes(boost::dynamic_pointer_cast<NonLeafEntry>(*it)->getNode(), ofs);
-        }
-        else
-        {
-            ss<<(boost::uint64_t)(*it).get()<<" [label=\""<<(*it)->getMBR()->getLower()[0]<<","<<(*it)->getMBR()->getLower()[1]<<"\n"<<(*it)->getMBR()->getUpper()[0]<<","<<(*it)->getMBR()->getUpper()[1]<<"\"];\n";
-        }
-    }
-
-    return ss.str();
-}
-

@@ -78,13 +78,6 @@ public:
      */
     static void adjustTreeForRemove(Node*N, Node* DN, std::list<Node*> siblings);
 
-    static void debug(Node* root);
-
-    static std::string listNodeLinks(Node* node, std::ofstream& ofs);
-    static std::string listNodes(Node* node, std::ofstream& ofs);
-
-    static int counter;
-
 };
 
 #endif // HRTREE_SRC_RTREEHELPER_HH
