@@ -27,7 +27,7 @@
 \usepackage{amsmath}
 \usepackage{graphicx}
 \usepackage{gensymb}
-
+\usepackage{rotating}
 
 \hypersetup{
   pdfauthor = {\myname},
@@ -202,19 +202,20 @@ The geometric construction of the Hilbert curve starts with the $\sqcap$ shape a
 The first six orders of the Hilbert curve can be seen in figure ~\ref{fig:hilbert}.
 
 \begin{figure}[h!]
-  \caption{Hilbert curves of order 1 to 6}
-  \label{fig:hilbert}
   \centering
     \includegraphics[width=0.9\textwidth]{img/Hilbert6}
+    \caption{"Hilbert curve". Licensed under CC BY-SA 3.0 via Wikipedia add -  \protect\url{http://en.wikipedia.org/wiki/File:Hilbert_curve.svg\# mediaviewer/File:Hilbert_curve.svg}}
+  \label{fig:hilbert}
 \end{figure}
+
 
 When the order of the curve tends to infinity, the resulting curve is a fractal, with a fractal dimension of 2. The Hilbert curve can be generalized for higher dimensions. The path of a space filling curve imposes a linear ordering on the grid points. Figure ~\ref{fig:hilbert-ordering} shows such ordering for an order 2 curve. For example the point (0,0) on the curve has a Hilbert value of 0, while the point (1,1) has a Hilbert value of 2. 
 
 \begin{figure}[h!]
-  \caption{Ordering imposed by the Hilbert curve {\cite{Kamel:1994:HRI:645920.673001}} }
-  \label{fig:hilbert-ordering}
   \centering
     \includegraphics[width=0.5\textwidth]{img/HilbertOrdering}
+    \caption{Ordering imposed by the Hilbert curve {\cite{Kamel:1994:HRI:645920.673001}} }
+  \label{fig:hilbert-ordering}
 \end{figure}
 
 %Describe the compact hilbert index
@@ -250,14 +251,102 @@ In the Hilbert R-tree orphaned nodes do not need to be reinserted whenever a fat
 The Hilbert R-tree provides a better space utilization and greater search performance than the other R-tree variants at the cost of a higher insertion cost. In the benchmarks displayed in \cite{Kamel:1994:HRI:645920.673001}, the Hilbert R-tree outperforms the \rstar and the standard R-tree in all tests.
 
 In the next section I will give details about the C++ implementation of the Hilbert R-tree that was done for this project.
+
 \section{Hilbert R-tree implementation}
 \label{sec:hrtree}
 
+\begin{sidewaysfigure}
+  \centering
+    \includegraphics[width=0.9\textwidth]{img/ClassDiagram.png}
+      \caption{Hilbert R-tree class diagram}
+  \label{fig:class_diagram}
+\end{sidewaysfigure}
+
+
+The implementation of the Hilbert R-tree was performed in C++ using the Compact Hilbert Index library\cite{libhilbert} implemented by Chris Hamilton and the Boost library \cite{boost}.
+
+The code was written following a test-driven development process. This lead to a large number of tests which also act as a secondary developer documentation for the code.
+The class structure of the software can be seen in figure ~\ref{fig:class_diagram}.
+
+To the extent of my knowledge, there is no implementation of the Hilbert R-tree for n-dimensional data available on the internet. The code written in this step is a basis for integration into the rasdaman index manager.
+
+The implementation if very well tested and documented, and can be found here \url{https://github.com/atoader/HilbertRTree} together on instructions on how to build and run it.
 \section{Benchmark implementation}
 \label{sec:benchmark}
+% What is the purpose of this benchmark?
+In order to compare the performance of rasdaman's current indexing algorithm based on the \rplus with a new implementation based on the Hilbert R-tree, a benchmark was developed for this purpose.
+
+The benchmark is comprised of a set of test cases which have been implemented in the array DBMS benchmarking framework developed by George Merticariu\cite{GM}.
+
+% Where is the index used?
+In rasdaman, raster objects are maintained in a standard relational database, based on the partitioning of an array object into tiles\cite{DBLP:conf/icde/FurtadoB99} ~\ref{fig:rasdaman-tile}. Tiles and tile index are stored as BLOBs. The indexing mechanism employed by rasdaman, which is the subject of a possible improvement through this research, is the component that manages these BLOBs.
+
+\begin{figure}[h!]
+  \centering
+    \includegraphics[width=0.9\textwidth]{img/tiling}
+    \caption{"Sample tiling of an array for storage in rasdaman" by Pebau.grandauer - Licensed under CC BY-SA 3.0 via Wikimedia Commons -\url{http://commons.wikimedia.org/wiki/File:Sample_tiling_of_an_array_for_storage_in_rasdaman.png\# mediaviewer/File:Sample_tiling_of_an_array_for_storage_in_rasdaman.png }}
+  \label{fig:rasdaman-tile}
+\end{figure}
+
+% What should it test?
+Rasdaman offers a set of options that can be modified and tuned to the user's requirements when inserting a new collection into the database:
+
+\begin{verbatim}
+INSERT INTO collName VALUES ...
+[ TILING tilingName tilingOptions [ TILE SIZE tileSize ] ]
+[ INDEX indexName ]
+\end{verbatim}
+
+As can be seen from the name of the options, they have an impact on the tiling scheme and, in consequence, the performance of subsequent queries on the data. The \textit{indexName} parameter is used to select the type of index and it will be used to distinguish between the \rplus implementation and the Hilbert R-tree implementation. The \textit{tileSize} parameter determines the size of a tile. The size of the tile determines the overall number of tiles and also influences how the data is stored on disk. The \textit{tilingName} option allows the user to select from a list of available tiling schemes. 
+
+% What parameters are of importance for the test?
+Because this benchmark assesses the performance of the component that indexes tiles and not of the tiling scheme, a regular tiling will be used. The tile size will be varied for the same collection, in order to measure its impact on the indexing performance.
+
+% How should it test?
+The benchmark is developed to verify the performance of the index manager from the DMBS user's point of view. Using the rasql component, queries will be run and timed through the mentioned benchmarking framework.
+
+% What operations are performed?
+
+ The trials described below will measure the performance of inserting new data into the index, searching data in the index and removing data from the index. To this end, the tests have been separated into three classes: Insertion, Search and Deletion. As the type of data that is indexed is of no importance to the performance of the index, random character data will be used.
+ 
+\subsubsection*{Insertion}
+In order to test the performance of insertion, I will create collections of dimension ranging from 1-D to 6-D, sizes of 1MB, 10MB, 100MB, 1GB and 10GB, and tile sizes of 1MB, 4MB and 16MB while using the regular tiling scheme.
+
+\subsubsection*{Search}
+In order to test the performance of search, for each of the collections inserted in the previous step, I have performed the following operations:
+\begin{enumerate}
+%\item  
+\item Retrieve slices of the collection, centered at the upper-left corner and of increasing size in every dimension. This will test the performance of the indexing structure when a large number of nodes are processed by the search algorithm. An example for the 2-D case can be seen in figure ~\ref{fig:search1}.
+\item Retrieve slices of the same dimension, positioned at sequential coordinates through the collection. An example for the 2-D case can be seen in figure ~\ref{fig:search2}. 
+\item Retrieve multiple subsets of the collection at the same time.
+\end{enumerate}
+
+\begin{figure}[h!]
+  \centering
+    \includegraphics[width=0.5\textwidth]{img/search1}
+      \caption{Sequential retrieval of increasing subsets of a collection}
+  \label{fig:search1}
+\end{figure}
+
+\begin{figure}[h!]
+  \centering
+    \includegraphics[width=0.4\textwidth]{img/search2}
+      \caption{Sequential retrieval of consecutive slices}
+  \label{fig:search2}
+\end{figure}
+
+\subsubsection*{Deletion}
+To the extent of my knowledge, there is no method to remove a single tile from the index by using the rasql language. The only test that can be performed is to to remove the entire collection from the database and to record the amount of time consumed by this operation.
 
 \section{Conclusions and future work}
 \label{sec:conclusions}
+As stated in the initial project plan, the Hilbert R-tree data structure was implemented in the C++ language with support for n-dimensional objects. This implementation should prove valuable to the community as a whole, and act as a starting point for the integration into rasdaman's indexing mechanism.
+
+The next step was to develop a benchmark for assessing the performance of rasdaman's indexing mechanism. This was accomplished using the benchmarking framework developed by Merticariu in \cite{GM} and extending it with a collection of new queries.
+
+Unfortunately, the research and implementation of the Hilbert R-tree for n-dimensions proved quite involved and accounted for more than 80\% of the time allocated to this project. This lead to the impossibility of successfully achieving the last goal of the project, integrating the Hilbert R-tree into rasdaman. This last task is left for future research. 
+
+\newpage
 
 \newpage
 \bibliography{bibliography}
