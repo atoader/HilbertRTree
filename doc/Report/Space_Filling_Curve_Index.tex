@@ -88,11 +88,11 @@
 %1. Array database intro
 %2. 
 
-Array database management system(DBMS) offer scalable, flexible storage, and fast manipulation of n-dimensional homogeneous collections of items (array/raster data). Often, arrays are used to represent sensor, simulation, image or statistics data. 
+Array database management systems (DBMS) offer scalable, flexible storage, and fast manipulation of n-dimensional homogeneous collections of items (array/raster data). Often, arrays are used to represent sensor, simulation, image or statistics data. 
 
 There are many applications that benefit from efficient processing of array data such as: remote sensing, geology, oceanography, business data and gene data. These applications pose high requirements concerning the data and the operations that need to be supported, and therefore new techniques and tools are needed for increased processing efficiency.
 
-One of the main issues that arise when working with high dimensional, terabyte objects is how to store them in the underlying system while maintaining a high-performance level. Due to their size, raster objects need to be divided into sub-arrays that can be easily managed by the underlying storage provider. In order to attain this, a system for indexing and retrieving fragments of n-dimensional objects must be provided.
+One of the main issues that arise when working with high dimensional, terabyte objects is how to store them in the underlying system while maintaining a high level of performance. Due to their size, raster objects need to be divided into sub-arrays that can be easily managed by the underlying storage provider. In order to attain this, a system for indexing and retrieving fragments of n-dimensional objects must be provided.
 
 Rasdaman is the leading array DMBS and has been used in applications involving data ranging from 1-D measurements to 4-D ocean and climate data. The rasdaman system partitions raster objects into tiles\cite{DBLP:conf/icde/FurtadoB99} which are indexed using a mechanism based on the \rplus. The individual tiles can be considered n-dimensional spatial objects (rectangles). 
 
@@ -102,7 +102,7 @@ The B+ tree\cite{Comer:1979:UB:356770.356776} has found wide adoption in the fie
 
 The R-tree, proposed by Antonin Guttman\cite{Guttman:1984:RDI:602259.602266}, is the preferred method for indexing spatial data. The key idea is to group objects using their minimum bounding rectangle(MBR). Objects are added to a MBR within the node that will lead to the smallest increase in its size. The performance of R-trees depends on the quality of the algorithm that clusters the data rectangles on a node.
 
-Rasdaman currently uses an implementation based on the \rplus. The \rplus is a compromise between R-trees and kd-trees: they avoid overlapping of internal nodes by inserting an object into multiple leaves if necessary. The \rplus offers increased point query performance over the original R-tree at the cost of a higher space utilization. 
+The \rplus is a compromise between R-trees and kd-trees: it avoids overlapping of internal nodes by inserting an object into multiple leaves if necessary. The \rplus offers increased point query performance over the original R-tree at the cost of a higher space utilization. 
 
 The original R-tree, proposed by Guttman, is the basis of a number of variations and improvements\cite{Manolopoulos:2005:RTA:1098699}. The \rstar is considered the most robust variant, and has found numerous applications, in both research and commercial systems. However, the empirical study performed in \cite{Kamel:1994:HRI:645920.673001} has shown that the Hilbert R-Tree can perform better than the other variants in some cases.
 
@@ -126,7 +126,7 @@ The report ends with a discussion of the results and future work.
 \section{Related work}
 \label{sec:related}
 
-In this section, I will first describe the original R-tree proposed by Guttman, as it lays the foundation for the \rplus data structure used in rasdaman and the Hilbert R-tree that is the subject of this project,followed by a short description of the \rplus variant of the R-tree used in rasdaman, a presentation of the Hilbert curve and, finally, a description of the Hilbert R-tree algorithm.
+In this section, I will first describe the original R-tree proposed by Guttman, as it lays the foundation for the \rplus data structure used in rasdaman and the Hilbert R-tree that is the subject of this project, followed by a short description of the \rplus variant of the R-tree used in rasdaman, a presentation of the Hilbert curve and, finally, a description of the Hilbert R-tree algorithm.
 
 \subsection{R-tree}
 The R-tree data structure was developed by Antonin Guttmann\cite{Guttman:1984:RDI:602259.602266} and is a hierarchical data structure based on the \bplus. It is used for the dynamic organization of a set of n-dimensional geometric objects represented by their n-dimensional minimum bounding rectangle. 
@@ -146,7 +146,7 @@ It is worth mentioning that the MBRs of different nodes may overlap each other a
 Two terms that are important for the performance of an R-tree are \textit{coverage} and \textit{overlap}. The coverage of a level of an R-tree is defined as the total area of all the rectangles associated with the nodes of that level. The overlap of a level of an R-tree is defined as the total area contained within two or more nodes. Efficient R-tree searching demands that both
 overlap and coverage be minimized. Data structures based on the R-tree as the \rplus and the \rstar use methods that improve these two metrics. 
 
-The R-tree supports the following operations: searching for objects whose MBR intersects a query rectangle $Q$, inserting new object, and deleting existing objects.
+The R-tree supports the following operations: searching for objects whose MBR intersects a query rectangle $Q$, inserting new objects, and deleting existing objects.
 
 \subsubsection*{Search}
 Given a rectangle, $Q$, we can find all data rectangles that are intersected by this rectangle. The search starts from the root node of the tree. For every entry $(mbr, p)$ in a non-leaf node, if $mbr$ intersects $Q$, the search continues on the node that $p$ points to. When a leaf node is reached, Q is tested for intersection with each MBR of each leaf entry, and the entries that are intersected are returned.
@@ -154,7 +154,7 @@ Given a rectangle, $Q$, we can find all data rectangles that are intersected by 
 \subsubsection*{Insertion}
 Insertions in an R-tree are handled similarly to insertions in a \bplus. The R-tree is traversed to locate an appropriate leaf to insert the new entry. At each step, the rectangles in the current node are examined, and a candidate is chosen using a heuristic such as choosing the rectangle which requires the least enlargement. The search descends into the tree until a leaf node is found.
 
-The entry is inserted in the found leaf and, then all nodes on the path from the root to that leaf are updated accordingly. If the leaf cannot accommodate the new entry because it is full, then it is split into two nodes.
+The entry is inserted in the found leaf and all nodes on the path from the root to that leaf are updated accordingly. If the leaf cannot accommodate the new entry because it is full, then it is split into two nodes.
 
 In case of a split, the redistribution of the leaf entries is done following a heuristic which impacts the performance of the tree. The objective of the split algorithm is to minimize the probability of invoking both created nodes for the same query. 
 
@@ -165,7 +165,7 @@ In order to delete an entry from the R-tree, the search algorithm is used to fin
 
 \subsection{\rplus}
 
-The standard R-Trees dynamic insertion algorithms might lead to a structure that has excessive space overlap and "dead-space" in the nodes which results in bad performance. Efficient R-tree searching demands that both overlap and coverage be minimized. It has been shown, that zero overlap and coverage is only achievable for data points that are known in advance and, that using a packing technique for R-trees, search is dramatically improved\cite{Roussopoulos85directspatial}.
+The standard R-Trees dynamic insertion algorithms might lead to a structure that has excessive space overlap and "dead-space" in the nodes which results in bad performance. Efficient R-tree searching demands that both overlap and coverage be minimized. It has been shown that zero overlap and coverage is only achievable for data points that are known in advance and, that using a packing technique for R-trees search is dramatically improved\cite{Roussopoulos85directspatial}.
 
 The \rplus \cite{Sellis:1987:RDI:645914.671636} is a variation of Guttman's R-trees that avoids overlapping rectangles in intermediate nodes of the tree by allowing partitions to split rectangles. The paper introducing the data structure shows that the \rplus achieves up to 50\% savings in disk accesses compared to an R-tree when searching files of thousands of rectangles.
 
@@ -187,9 +187,9 @@ A full discussion of the \rplus algorithms and a performance comparison to the R
 %Describe space filling curves
 A space-filling curve is a parametrized, injective function which maps a unit line segment to a continuous curve in a hypercube, which gets arbitrarily close to a given point in the hypercube as the parameter increases.\cite{MR1299533}. In essence, this means that space filling curves can be used for dimension reduction i.e. by using the inverse of the curve generating function, one can map a multidimensional point to a point on a line.
 
-Space filling curves that are Lebesgue measure-preserving have the additional property that equal length intervals map to equal volumes i.e. objects that are close together in multidimensional space will map to points that are close together in 1-dimensional space.
+Space filling curves that are Lebesgue measure-preserving have the additional property that equal length intervals map to equal volumes i.e. points that are close together in 1-dimensional space will map to objects that are close together in multidimensional space.
 
-The Z-order, the Hilbert curve, and the Gray-code curve\cite{Faloutsos:1988:GCP:53064.53065} are examples of space filling curves. In \cite{Faloutsos:1989:FSK:73721.73746}, it was shown experimentally that, given a set of set of n-dimensional rectangles, the Hilbert curve achieves the best clustering among the three above methods i.e. the rectangles that are close together in n-dimensional space will be mapped to points that are close together in 1-dimensional space.
+The Z-order curve, the Hilbert curve, and the Gray-code curve\cite{Faloutsos:1988:GCP:53064.53065} are examples of space filling curves. In \cite{Faloutsos:1989:FSK:73721.73746}, it was shown experimentally that, given a set of n-dimensional rectangles, the Hilbert curve achieves the best clustering among the three methods above i.e. the rectangles that are close together in n-dimensional space will be mapped to points that are close together in 1-dimensional space.
 
 The geometric construction of the Hilbert curve starts with the $\sqcap$ shape as shown in the first image of figure ~\ref{fig:hilbert}. This is known as an order 1 Hilbert curve. Given an order k curve, one can obtain an order k+1 curve as follows:
 \begin{enumerate}
@@ -209,7 +209,7 @@ The first six orders of the Hilbert curve can be seen in figure ~\ref{fig:hilber
 \end{figure}
 
 
-When the order of the curve tends to infinity, the resulting curve is a fractal, with a fractal dimension of 2. The Hilbert curve can be generalized for higher dimensions. The path of a space filling curve imposes a linear ordering on the grid points. Figure ~\ref{fig:hilbert-ordering} shows such ordering for an order 2 curve. For example the point (0,0) on the curve has a Hilbert value of 0, while the point (1,1) has a Hilbert value of 2. 
+When the order of the curve tends to infinity, the resulting curve is a fractal, with a fractal dimension of 2. The Hilbert curve can be generalized for higher dimensions. The path of a space filling curve imposes a linear ordering on the grid points. Figure ~\ref{fig:hilbert-ordering} shows such an ordering for an order 2 curve. For example the point (0,0) on the curve has a Hilbert value of 0, while the point (1,1) has a Hilbert value of 2. 
 
 \begin{figure}[h!]
   \centering
@@ -270,7 +270,7 @@ The class structure of the software can be seen in figure ~\ref{fig:class_diagra
 
 To the extent of my knowledge, there is no implementation of the Hilbert R-tree for n-dimensional data available on the internet. The code written in this step is a basis for integration into the rasdaman index manager.
 
-The implementation if very well tested and documented, and can be found here \url{https://github.com/atoader/HilbertRTree} together on instructions on how to build and run it.
+The implementation if very well tested and documented, and can be found here \url{https://github.com/atoader/HilbertRTree} together with instructions on how to build and run it.
 \section{Benchmark implementation}
 \label{sec:benchmark}
 % What is the purpose of this benchmark?
@@ -279,7 +279,7 @@ In order to compare the performance of rasdaman's current indexing algorithm bas
 The benchmark is comprised of a set of test cases which have been implemented in the array DBMS benchmarking framework developed by George Merticariu\cite{GM}.
 
 % Where is the index used?
-In rasdaman, raster objects are maintained in a standard relational database, based on the partitioning of an array object into tiles\cite{DBLP:conf/icde/FurtadoB99} ~\ref{fig:rasdaman-tile}. Tiles and tile index are stored as BLOBs. The indexing mechanism employed by rasdaman, which is the subject of a possible improvement through this research, is the component that manages these BLOBs.
+In rasdaman, raster objects are maintained in a standard relational database, based on the partitioning of an array object into tiles\cite{DBLP:conf/icde/FurtadoB99} ~\ref{fig:rasdaman-tile}. Tiles are stored as BLOBs. The indexing mechanism employed by rasdaman, which is the subject of a possible improvement through this research, is the component that manages these BLOBs.
 
 \begin{figure}[h!]
   \centering
@@ -289,7 +289,7 @@ In rasdaman, raster objects are maintained in a standard relational database, ba
 \end{figure}
 
 % What should it test?
-Rasdaman offers a set of options that can be modified and tuned to the user's requirements when inserting a new collection into the database:
+Rasdaman offers a set of options that can be used to tune the tile storage to the user's requirements when inserting a new collection into the database:
 
 \begin{verbatim}
 INSERT INTO collName VALUES ...
@@ -297,7 +297,7 @@ INSERT INTO collName VALUES ...
 [ INDEX indexName ]
 \end{verbatim}
 
-As can be seen from the name of the options, they have an impact on the tiling scheme and, in consequence, the performance of subsequent queries on the data. The \textit{indexName} parameter is used to select the type of index and it will be used to distinguish between the \rplus implementation and the Hilbert R-tree implementation. The \textit{tileSize} parameter determines the size of a tile. The size of the tile determines the overall number of tiles and also influences how the data is stored on disk. The \textit{tilingName} option allows the user to select from a list of available tiling schemes. 
+These options have an impact on the performance of subsequent queries on the inserted data. The \textit{indexName} parameter is used to select the type of index and it will be used to distinguish between the \rplus implementation and the Hilbert R-tree implementation. The \textit{tileSize} parameter determines the size of a tile. The size of the tile determines the overall number of tiles and also influences how the data is stored on disk. The \textit{tilingName} option allows the user to select from a list of available tiling schemes. 
 
 % What parameters are of importance for the test?
 Because this benchmark assesses the performance of the component that indexes tiles and not of the tiling scheme, a regular tiling will be used. The tile size will be varied for the same collection, in order to measure its impact on the indexing performance.
