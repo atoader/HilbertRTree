@@ -20,7 +20,7 @@
 \newcommand{\mytodo}[1]{\emph{{\color{red} #1 \\}}}
 \newcommand{\rplus}{R$^+$-tree$\,$}
 \newcommand{\rstar}{R$^*$-tree$\,$}
-\newcommand{\rtree}{R-tree}
+\newcommand{\rtree}{R$^+$-tree$\,$}
 \newcommand{\bplus}{B$^+$-tree$\,$}
 \usepackage{nameref}
 \usepackage{verbatim}
@@ -276,11 +276,11 @@ The implementation if very well tested and documented, and can be found here \ur
 \section{Benchmark implementation}
 \label{sec:benchmark}
 % What is the purpose of this benchmark?
-The initial goal was to compare the performance of rasdaman's current index implementation with an implementation based on the Hilbert R-tree. Because this could not be achieved, a benchmark was devised that compares the performance of the Hilbert R-tree implementation with an \rtree  implementation. The results of this set of performance test would decide if integrating the Hilbert R-tree into rasdaman would be of value.
+The initial goal was to compare the performance of rasdaman's current index implementation with an implementation based on the Hilbert R-tree. Because this could not be achieved, a benchmark was devised that compares the performance of the Hilbert R-tree implementation with an \rtree  implementation. The results of this set of performance tests would decide if integrating the Hilbert R-tree into rasdaman would be of value to the community.
 
 The benchmark is comprised of a set of test cases which have been developed considering how the indexing mechanism in rasdaman is used. In rasdaman, raster objects are maintained in a standard relational database, based on the partitioning of an array object into tiles\cite{DBLP:conf/icde/FurtadoB99} ~\ref{fig:rasdaman-tile}. Tiles are stored as BLOBs. The indexing mechanism employed by rasdaman, which is the subject of a possible improvement through this research, is the component that manages these BLOBs.
 
-\begin{figure}[h!]
+\begin{figure}[H]
   \centering
     \includegraphics[width=0.9\textwidth]{img/tiling}
     \caption{"Sample tiling of an array for storage in rasdaman" by Pebau.grandauer - Licensed under CC BY-SA 3.0 via Wikimedia Commons -\url{http://commons.wikimedia.org/wiki/File:Sample_tiling_of_an_array_for_storage_in_rasdaman.png\# mediaviewer/File:Sample_tiling_of_an_array_for_storage_in_rasdaman.png }}
@@ -303,7 +303,7 @@ Because this benchmark assesses the performance of the component that indexes ti
 
 % What operations are performed?
 
- The trials described below will measure the performance of inserting new data into the index and searching data in the index. Removing data from the index is not tested because it is not relevant to the use case described above. To this end, the tests have been separated into two classes: Insertion and Search. Multidimensional rectangles of fixed size will be used to simulate the insertion and retrieval of tiles through rasdaman's indexing mechanism.
+ The trials described below will measure the performance of inserting new data into the index and searching for data in the index. Removing data from the index is not tested because it is not relevant to the use case described above. The tests have been separated into two subsections: Insertion and Search. Multidimensional rectangles of fixed size will be used to simulate the insertion and retrieval of tiles through rasdaman's indexing mechanism.
  
 \subsubsection*{Insertion}
 In order to test the performance of insertion, I will insert collections of $[items\_no ^ {\frac{1}{N}} + 1 ]^N $ rectangles where $items\_no$ takes values 1, 10, 100, 1000, 10000, and 100000  and $N$ is the dimension of the space and takes values from 2 to 6.
@@ -483,11 +483,11 @@ For all the tests, the Hilbert R-tree performed, on average, worse than the \rtr
 
 \section{Conclusions and future work}
 \label{sec:conclusions}
-As stated in the initial project plan, the Hilbert R-tree data structure was implemented in the C++ language with support for n-dimensional objects. This implementation should prove valuable to the community as a whole, and act as a starting point for the integration into rasdaman's indexing mechanism.
+As stated in the initial project plan, the Hilbert R-tree data structure was implemented in the C++ language with support for n-dimensional objects. This implementation should prove valuable to the community as a whole, and act as a starting point for the integration into rasdaman's indexing mechanism, given that the performance is improved.
 
-The next step was to develop a benchmark for assessing the performance of the Hilbert R-tree compared to rasdaman's current implementation. Because the Hilbert R-tree could not be integrated into rasdaman, an alternative solution was provided which compares the performance of the Hilbert R-tree implementation with an \rtree tree implementation. The results of this benchmark show that the performance of the Hilbert R-tree is worse than that of the \rtree, and integrating the Hilbert R-tree will not add any value to the rasdaman DBMS.
+The next step was to develop a benchmark for assessing the performance of the Hilbert R-tree compared to rasdaman's current implementation. Because the Hilbert R-tree could not be integrated into rasdaman, an alternative solution was provided which compares the performance of the Hilbert R-tree implementation with an \rtree implementation. The results of this benchmark show that the performance of the Hilbert R-tree is worse than that of the \rtree, and integrating the Hilbert R-tree will not add any value to the rasdaman DBMS.
 
-Unfortunately, the research and implementation of the Hilbert R-tree for n-dimensions proved quite involved and accounted for more than 80\% of the time allocated to this project. This lead to the impossibility of successfully achieving the last goal of the project, integrating the Hilbert R-tree into rasdaman. This last task is left for future research. 
+Unfortunately, the research and implementation of the Hilbert R-tree for n-dimensions proved quite involved and accounted for more than 80\% of the time allocated to this project. This lead to the impossibility of successfully achieving the last goal of the project, integrating the Hilbert R-tree into rasdaman. This last task, together with improving the performance of the Hilbert R-tree implementation, is left for future research. 
 
 \newpage
 
