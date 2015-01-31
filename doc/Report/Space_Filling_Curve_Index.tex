@@ -20,6 +20,7 @@
 \newcommand{\mytodo}[1]{\emph{{\color{red} #1 \\}}}
 \newcommand{\rplus}{R$^+$-tree$\,$}
 \newcommand{\rstar}{R$^*$-tree$\,$}
+\newcommand{\rtree}{R-tree}
 \newcommand{\bplus}{B$^+$-tree$\,$}
 \usepackage{nameref}
 \usepackage{verbatim}
@@ -28,6 +29,7 @@
 \usepackage{graphicx}
 \usepackage{gensymb}
 \usepackage{rotating}
+\usepackage{float}
 
 \hypersetup{
   pdfauthor = {\myname},
@@ -62,7 +64,7 @@
   \vspace*{20mm}
   \begin{center}
     \large
-    Big Data Project
+    Database and Web Applications Lab
   \end{center}
   \vfill
   \vspace*{8mm}
@@ -274,12 +276,9 @@ The implementation if very well tested and documented, and can be found here \ur
 \section{Benchmark implementation}
 \label{sec:benchmark}
 % What is the purpose of this benchmark?
-In order to compare the performance of rasdaman's current indexing algorithm based on the \rplus with a new implementation based on the Hilbert R-tree, a benchmark was developed for this purpose.
+The initial goal was to compare the performance of rasdaman's current index implementation with an implementation based on the Hilbert R-tree. Because this could not be achieved, a benchmark was devised that compares the performance of the Hilbert R-tree implementation with an \rtree  implementation. The results of this set of performance test would decide if integrating the Hilbert R-tree into rasdaman would be of value.
 
-The benchmark is comprised of a set of test cases which have been implemented in the array DBMS benchmarking framework developed by George Merticariu\cite{GM}.
-
-% Where is the index used?
-In rasdaman, raster objects are maintained in a standard relational database, based on the partitioning of an array object into tiles\cite{DBLP:conf/icde/FurtadoB99} ~\ref{fig:rasdaman-tile}. Tiles are stored as BLOBs. The indexing mechanism employed by rasdaman, which is the subject of a possible improvement through this research, is the component that manages these BLOBs.
+The benchmark is comprised of a set of test cases which have been developed considering how the indexing mechanism in rasdaman is used. In rasdaman, raster objects are maintained in a standard relational database, based on the partitioning of an array object into tiles\cite{DBLP:conf/icde/FurtadoB99} ~\ref{fig:rasdaman-tile}. Tiles are stored as BLOBs. The indexing mechanism employed by rasdaman, which is the subject of a possible improvement through this research, is the component that manages these BLOBs.
 
 \begin{figure}[h!]
   \centering
@@ -297,52 +296,196 @@ INSERT INTO collName VALUES ...
 [ INDEX indexName ]
 \end{verbatim}
 
-These options have an impact on the performance of subsequent queries on the inserted data. The \textit{indexName} parameter is used to select the type of index and it will be used to distinguish between the \rplus implementation and the Hilbert R-tree implementation. The \textit{tileSize} parameter determines the size of a tile. The size of the tile determines the overall number of tiles and also influences how the data is stored on disk. The \textit{tilingName} option allows the user to select from a list of available tiling schemes. 
+These options have an impact on the performance of subsequent queries on the inserted data. The \textit{indexName} parameter is used to select the type of index. The \textit{tileSize} parameter determines the size of a tile. The size of the tile determines the overall number of tiles and also influences how the data is stored on disk. The \textit{tilingName} option allows the user to select from a list of available tiling schemes. 
 
 % What parameters are of importance for the test?
-Because this benchmark assesses the performance of the component that indexes tiles and not of the tiling scheme, a regular tiling will be used. The tile size will be varied for the same collection, in order to measure its impact on the indexing performance.
-
-% How should it test?
-The benchmark is developed to verify the performance of the index manager from the DMBS user's point of view. Using the rasql component, queries will be run and timed through the mentioned benchmarking framework.
+Because this benchmark assesses the performance of the component that indexes tiles and not of the tiling scheme, a regular tiling will be used. The tile size only influences the number of tiles, so it will be fixed in this case.
 
 % What operations are performed?
 
- The trials described below will measure the performance of inserting new data into the index, searching data in the index and removing data from the index. To this end, the tests have been separated into three classes: Insertion, Search and Deletion. As the type of data that is indexed is of no importance to the performance of the index, random character data will be used.
+ The trials described below will measure the performance of inserting new data into the index and searching data in the index. Removing data from the index is not tested because it is not relevant to the use case described above. To this end, the tests have been separated into two classes: Insertion and Search. Multidimensional rectangles of fixed size will be used to simulate the insertion and retrieval of tiles through rasdaman's indexing mechanism.
  
 \subsubsection*{Insertion}
-In order to test the performance of insertion, I will create collections of dimension ranging from 1-D to 6-D, sizes of 1MB, 10MB, 100MB, 1GB and 10GB, and tile sizes of 1MB, 4MB and 16MB while using the regular tiling scheme.
+In order to test the performance of insertion, I will insert collections of $[items\_no ^ {\frac{1}{N}} + 1 ]^N $ rectangles where $items\_no$ takes values 1, 10, 100, 1000, 10000, and 100000  and $N$ is the dimension of the space and takes values from 2 to 6.
+
+As can be seen from figures ~\ref{fig:insert2D},~\ref{fig:insert3D},~\ref{fig:insert4D}, ~\ref{fig:insert5D} and ~\ref{fig:insert6D} \footnote{The left vertical axis of the figures uses logarithmic scale.}, the performance of inserting rectangles into the Hilbert tree takes more time than inserting rectangles into the \rtree . This was expected, as the algorithm for inserting an item into the Hilbert R-tree is more expensive than the one for inserting an item into the \rtree.
+
+\begin{figure}[H]
+  \centering
+    \includegraphics[width=0.8\textwidth]{img/insert2D}
+      \caption{Performance of 2D rectangle insertion}
+  \label{fig:insert2D}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+    \includegraphics[width=0.8\textwidth]{img/insert3D}
+      \caption{Performance of 3D rectangle insertion}
+  \label{fig:insert3D}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+    \includegraphics[width=0.8\textwidth]{img/insert4D}
+      \caption{Performance of 4D rectangle insertion}
+  \label{fig:insert4D}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+    \includegraphics[width=0.8\textwidth]{img/insert5D}
+      \caption{Performance of 5D rectangle insertion}
+  \label{fig:insert5D}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+    \includegraphics[width=0.8\textwidth]{img/insert6D}
+      \caption{Performance of 6D rectangle insertion}
+  \label{fig:insert6D}
+\end{figure}
+
+
 
 \subsubsection*{Search}
 In order to test the performance of search, for each of the collections inserted in the previous step, I have performed the following operations:
 \begin{enumerate}
 %\item  
-\item Retrieve slices of the collection, centered at the upper-left corner and of increasing size in every dimension. This will test the performance of the indexing structure when a large number of nodes are processed by the search algorithm. An example for the 2-D case can be seen in figure ~\ref{fig:search1}.
-\item Retrieve slices of the same dimension, positioned at sequential coordinates through the collection. An example for the 2-D case can be seen in figure ~\ref{fig:search2}. 
-\item Retrieve multiple subsets of the collection at the same time.
-\end{enumerate}
+\item Retrieve slices of the same dimension, positioned at sequential coordinates through the collection. An example for the 2-D case can be seen in figure ~\ref{fig:search2}. The results can be seen in figures ~\ref{fig:range2D},~\ref{fig:range3D},~\ref{fig:range4D},~\ref{fig:range5D} and ~\ref{fig:range6D}.
 
-\begin{figure}[h!]
-  \centering
-    \includegraphics[width=0.5\textwidth]{img/search1}
-      \caption{Sequential retrieval of increasing subsets of a collection}
-  \label{fig:search1}
-\end{figure}
-
-\begin{figure}[h!]
+\begin{figure}[H]
   \centering
     \includegraphics[width=0.4\textwidth]{img/search2}
       \caption{Sequential retrieval of consecutive slices}
   \label{fig:search2}
 \end{figure}
 
-\subsubsection*{Deletion}
-To the extent of my knowledge, there is no method to remove a single tile from the index by using the rasql language. The only test that can be performed is to to remove the entire collection from the database and to record the amount of time consumed by this operation.
+\begin{figure}[H]
+  \centering
+    \includegraphics[width=0.8\textwidth]{img/range2d}
+      \caption{Performance of sequential range queries 2D }
+  \label{fig:range2D}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+    \includegraphics[width=0.8\textwidth]{img/range3d}
+      \caption{Performance of sequential range queries 3D }
+  \label{fig:range3D}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+    \includegraphics[width=0.8\textwidth]{img/range4d}
+      \caption{Performance of sequential range queries 4D }
+  \label{fig:range4D}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+    \includegraphics[width=0.8\textwidth]{img/range5d}
+      \caption{Performance of sequential range queries 5D }
+  \label{fig:range5D}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+    \includegraphics[width=0.8\textwidth]{img/range6d}
+      \caption{Performance of sequential range queries 6D }
+  \label{fig:range6D}
+\end{figure}
+
+\item Retrieve slices of the collection, centered at the upper-left corner and of increasing size in every dimension. This will test the performance of the indexing structure when a large number of nodes are processed by the search algorithm. An example for the 2-D case can be seen in figure ~\ref{fig:search1}.
+ The results can be seen in figures ~\ref{fig:cube2D},~\ref{fig:cube3D},~\ref{fig:cube4D},~\ref{fig:cube5D} and ~\ref{fig:cube6D}.
+ 
+\begin{figure}[H]
+  \centering
+    \includegraphics[width=0.5\textwidth]{img/search1}
+      \caption{Sequential retrieval of increasing subsets of a collection}
+  \label{fig:search1}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+    \includegraphics[width=0.8\textwidth]{img/cube2d}
+      \caption{Performance of 2D cube range query  }
+  \label{fig:cube2D}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+    \includegraphics[width=0.8\textwidth]{img/cube3d}
+      \caption{Performance of 3D cube range query }
+  \label{fig:cube3D}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+    \includegraphics[width=0.8\textwidth]{img/cube4d}
+      \caption{Performance of 4D cube range query  }
+  \label{fig:cube4D}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+    \includegraphics[width=0.8\textwidth]{img/cube5d}
+      \caption{Performance of 5D cube range query }
+  \label{fig:cube5D}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+    \includegraphics[width=0.8\textwidth]{img/cube6d}
+      \caption{Performance of 6D cube range query  }
+  \label{fig:cube6D}
+\end{figure}
+
+\item Perform point queries targeting each rectangle that is part the N-dimensional cube.  The results can be seen in figures ~\ref{fig:point2D},~\ref{fig:point3D},~\ref{fig:point4D},~\ref{fig:point5D} and ~\ref{fig:point6D}.
+
+
+\begin{figure}[H]
+  \centering
+    \includegraphics[width=0.8\textwidth]{img/point2d}
+      \caption{Performance of 2D point queries}
+  \label{fig:point2D}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+    \includegraphics[width=0.8\textwidth]{img/point3d}
+      \caption{Performance of 3D point queries}
+  \label{fig:point3D}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+    \includegraphics[width=0.8\textwidth]{img/point4d}
+      \caption{Performance of 4D point queries}
+  \label{fig:point4D}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+    \includegraphics[width=0.8\textwidth]{img/point5d}
+      \caption{Performance of 5D point queries}
+  \label{fig:point5D}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+    \includegraphics[width=0.8\textwidth]{img/point6d}
+      \caption{Performance of 6D point queries}
+  \label{fig:point6D}
+\end{figure}
+\end{enumerate}
+
+For all the tests, the Hilbert R-tree performed, on average, worse than the \rtree . This allows me to conclude that, in this case, the Hilbert R-tree is not a viable option for integration into rasdaman's indexing mechanism.
 
 \section{Conclusions and future work}
 \label{sec:conclusions}
 As stated in the initial project plan, the Hilbert R-tree data structure was implemented in the C++ language with support for n-dimensional objects. This implementation should prove valuable to the community as a whole, and act as a starting point for the integration into rasdaman's indexing mechanism.
 
-The next step was to develop a benchmark for assessing the performance of rasdaman's indexing mechanism. This was accomplished using the benchmarking framework developed by Merticariu in \cite{GM} and extending it with a collection of new queries.
+The next step was to develop a benchmark for assessing the performance of the Hilbert R-tree compared to rasdaman's current implementation. Because the Hilbert R-tree could not be integrated into rasdaman, an alternative solution was provided which compares the performance of the Hilbert R-tree implementation with an \rtree tree implementation. The results of this benchmark show that the performance of the Hilbert R-tree is worse than that of the \rtree, and integrating the Hilbert R-tree will not add any value to the rasdaman DBMS.
 
 Unfortunately, the research and implementation of the Hilbert R-tree for n-dimensions proved quite involved and accounted for more than 80\% of the time allocated to this project. This lead to the impossibility of successfully achieving the last goal of the project, integrating the Hilbert R-tree into rasdaman. This last task is left for future research. 
 
