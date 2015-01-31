@@ -1,0 +1,5 @@
+This folder contains an implementation of the R+ tree based on Greg Douglas's implementation of the R-tree http://superliminal.com/sources/sources.htm.
+
+To build, run:
+
+g++ -std=c++11 -O3 main.cpp 

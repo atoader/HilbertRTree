@@ -418,11 +418,13 @@ void benchmark(){
 	of << std::endl << std::endl;
 }
 
-void main()
+int main()
 {
 	of.open("results.txt");
 	benchmark();
 	std::cout << "Done." << std::endl;
 	getchar(); // Wait for keypress on exit so we can read console output
 	of.close();
+
+	return 0;
 }
